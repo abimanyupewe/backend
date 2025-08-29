@@ -28,7 +28,6 @@ const productSchema = new mongoose.Schema(
     },
     rating: {
       type: Number,
-      required: true,
       min: 0,
       max: 5,
     },
@@ -36,12 +35,10 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    images: [
-      {
-        url: { type: String, required: true },
-        public_id: { type: String },
-      },
-    ],
+    image: {
+      type: Array,
+      required: true
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -51,9 +48,6 @@ const productSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  {
-    timestamps: true,
-  }
 );
 
 // penamaan model

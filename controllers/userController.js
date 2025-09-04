@@ -3,6 +3,7 @@ import userModel from "../models/userModels.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
+import { sendOTPCode } from "../middleware/Email.js";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
@@ -35,46 +36,30 @@ const loginUser = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, emailOrPhone, password, repassword } = req.body;
+    const { name, email, password, repassword } = req.body;
 
     // Validasi field wajib
-    if (!name || !emailOrPhone) {
+    if (!name || !email) {
       return res.json({
         success: false,
-        message: "Name and email or phone are required",
+        message: "Name and email are required",
       });
     }
 
-    // Cek apakah input email atau phone
-    let email = "";
-    let phone = "";
-    if (validator.isEmail(emailOrPhone)) {
-      email = emailOrPhone;
-      // Cek duplikasi email
-      const exists = await userModel.findOne({ email });
-      if (exists) {
-        return res.json({
-          success: false,
-          message: "User with this email already exists",
-        });
-      }
-    } else if (/^\d{10,15}$/.test(emailOrPhone)) {
-      phone = emailOrPhone;
-      // Cek duplikasi phone
-      const exists = await userModel.findOne({ phone });
-      if (exists) {
-        return res.json({
-          success: false,
-          message: "User with this phone already exists",
-        });
-      }
-    } else {
+    if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Input must be a valid email or phone number",
+        message: "Input must be a valid email address",
       });
     }
 
+    // cek duplikasi email
+    const exists = await userModel.findOne({ email });
+    if (exists) {
+      return res.json({ success: false, message: "Email already exists" });
+    }
+
+    // validasi password
     if (password.length < 8) {
       return res.json({
         success: false,
@@ -104,22 +89,26 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 1 * 60 * 1000; // 1 menit dari sekarang
+
     const newUser = new userModel({
       name,
       email,
-      phone,
+      otp,
+      otpExpired,
+      isVerifed: false,
       password: hashedPassword,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     const user = await newUser.save();
-    const token = createToken(user._id);
+    sendOTPCode(email, otp);
 
     res.json({
       success: true,
-      message: "User registered successfully",
-      token,
+      message: "User registered successfully, otp sent to email",
     });
   } catch (error) {
     console.log(error);
@@ -160,15 +149,47 @@ const updateUser = async (req, res) => {
   }
 };
 
-const sendOTPVerificationEmail = async () => {
+const deleteUser = async (req, res) => {
   try {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP berlaku 10 menit
-    // Simpan otp dan otpExpiry ke database user
-    // Kirim email berisi OTP ke user
-  } catch (error) {
-    
-  }
-}
+    const { id } = req.body;
 
-export { loginUser, registerUser, updateUser };
+    const user = await userModel.findByIdAndDelete(id);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, message: "User deleted", user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const verOTP = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const user = await userModel.findOne({ code });
+    if (!user) {
+      return res.json({ success: false, message: "invalid OTP code" });
+    }
+
+    // cek apakah OTP sudah expired
+    if (user.otpExpired < Date.now()) {
+      await userModel.findByIdAndDelete(user._id);
+      return res.json({
+        success: false,
+        message: "OTP code has expired, please register again",
+      });
+    }
+
+    user.isVerifed = true;
+    user.otp = undefined;
+    user.otpExpired = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "OTP verified successfully", user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export { loginUser, registerUser, updateUser, deleteUser, verOTP };

@@ -7,6 +7,15 @@ import userRouter from "./routes/userRoute.js";
 import productRouter from "./routes/productRoute.js";
 import adminRouter from "./routes/adminRoute.js";
 
+import userModel from "./models/userModels.js";
+
+setInterval(async () => {
+  await userModel.deleteMany({
+    isVerifed: false,
+    otpExpired: { $lt: new Date() },
+  });
+}, 60 * 1000); // 1 menit
+
 // app config
 const app = express();
 const port = process.env.PORT || 4000; // port setting

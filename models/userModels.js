@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
       unique: true,
       lowercase: true,
       trim: true,
@@ -25,6 +24,21 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    isVerifed: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+      trim: true,
+    },
+    otpExpired: {
+      type: Date,
     },
     role: {
       type: String,

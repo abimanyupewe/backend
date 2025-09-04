@@ -2,12 +2,14 @@ import jwt from "jsonwebtoken";
 import userModel from "../models/userModels.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
+import { v2 as cloudinary } from "cloudinary";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
 };
 
-const loginUser = async (req, res) => {try {
+const loginUser = async (req, res) => {
+  try {
     const { email, password } = req.body;
     const user = await userModel.findOne({ email });
     if (!user) {
@@ -33,19 +35,43 @@ const loginUser = async (req, res) => {try {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, emailOrPhone, password, repassword } = req.body;
 
-    const exists = await userModel.findOne({ email });
-
-    // check user
-    if (exists) {
-      return res.json({ success: false, message: "User already exists" });
-    }
-
-    if (!validator.isEmail(email)) {
+    // Validasi field wajib
+    if (!name || !emailOrPhone) {
       return res.json({
         success: false,
-        message: "Invalid email format, please enter a valid email",
+        message: "Name and email or phone are required",
+      });
+    }
+
+    // Cek apakah input email atau phone
+    let email = "";
+    let phone = "";
+    if (validator.isEmail(emailOrPhone)) {
+      email = emailOrPhone;
+      // Cek duplikasi email
+      const exists = await userModel.findOne({ email });
+      if (exists) {
+        return res.json({
+          success: false,
+          message: "User with this email already exists",
+        });
+      }
+    } else if (/^\d{10,15}$/.test(emailOrPhone)) {
+      phone = emailOrPhone;
+      // Cek duplikasi phone
+      const exists = await userModel.findOne({ phone });
+      if (exists) {
+        return res.json({
+          success: false,
+          message: "User with this phone already exists",
+        });
+      }
+    } else {
+      return res.json({
+        success: false,
+        message: "Input must be a valid email or phone number",
       });
     }
 
@@ -55,20 +81,22 @@ const registerUser = async (req, res) => {
         message: "Password must be at least 8 characters long",
       });
     }
-
-    // Password must contain at least one uppercase letter
     if (!/[A-Z]/.test(password)) {
       return res.json({
         success: false,
         message: "Password must contain at least one uppercase letter",
       });
     }
-
-    // Password must contain at least one special character
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       return res.json({
         success: false,
         message: "Password must contain at least one special character",
+      });
+    }
+    if (password !== repassword) {
+      return res.json({
+        success: false,
+        message: "Password and re-password do not match",
       });
     }
 
@@ -79,14 +107,15 @@ const registerUser = async (req, res) => {
     const newUser = new userModel({
       name,
       email,
+      phone,
       password: hashedPassword,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     const user = await newUser.save();
-    // create token
     const token = createToken(user._id);
 
-    // debug
     res.json({
       success: true,
       message: "User registered successfully",
@@ -101,4 +130,45 @@ const registerUser = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser };
+const updateUser = async (req, res) => {
+  try {
+    const { id, ...updateData } = req.body;
+
+    // Ambil data user lama
+    const oldUser = await userModel.findById(id);
+
+    // Jika field tidak diisi, isi dengan data lama
+    updateData.name = updateData.name || oldUser.name;
+    updateData.email = updateData.email || oldUser.email;
+    updateData.phone = updateData.phone || oldUser.phone;
+
+    // Ambil file gambar jika ada
+    const image = req.files?.profileImage?.[0];
+    if (image) {
+      const result = await cloudinary.uploader.upload(image.path, {
+        resource_type: "image",
+      });
+      updateData.profileImage = result.secure_url;
+    }
+
+    const user = await userModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+    res.json({ success: true, message: "User updated", user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const sendOTPVerificationEmail = async () => {
+  try {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP berlaku 10 menit
+    // Simpan otp dan otpExpiry ke database user
+    // Kirim email berisi OTP ke user
+  } catch (error) {
+    
+  }
+}
+
+export { loginUser, registerUser, updateUser };

@@ -4,13 +4,16 @@ const sellerSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
       trim: true,
     },
     shopName: {
       type: String,
       required: true,
       trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
     },
     address: {
       type: String,
@@ -36,15 +39,18 @@ const sellerSchema = new mongoose.Schema(
     profileImage: {
       type: String,
     },
+    isVerifed: { type: Boolean, default: false },
+    otp: {
+      type: String,
+      trim: true,
+    },
+    otpExpired: {
+      type: Date,
+    },
     isOfficial: { type: Boolean, default: false },
     status: {
       type: Boolean,
       default: true,
-    },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: false,
     },
     createdAt: {
       type: Date,
@@ -56,7 +62,7 @@ const sellerSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,
+    minimize: false,
   }
 );
 

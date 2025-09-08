@@ -8,9 +8,15 @@ import productRouter from "./routes/productRoute.js";
 import adminRouter from "./routes/adminRoute.js";
 
 import userModel from "./models/userModels.js";
+import sellerModel from "./models/sellerModel.js";
+import sellerRouter from "./routes/sellerRoute.js";
 
 setInterval(async () => {
   await userModel.deleteMany({
+    isVerifed: false,
+    otpExpired: { $lt: new Date() },
+  });
+  await sellerModel.deleteMany({
     isVerifed: false,
     otpExpired: { $lt: new Date() },
   });
@@ -31,6 +37,7 @@ connectCloudinary(); // connect to cloudinary
 // role
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
+app.use("/api/seller", sellerRouter);
 // product
 app.use("/api/product", productRouter);
 

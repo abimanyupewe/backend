@@ -1,9 +1,11 @@
 import { v2 as cloudinary } from "cloudinary";
 import productModel from "../models/productModel.js";
+import sellerModel from "../models/sellerModel.js";
 
 const addProduct = async (req, res) => {
   try {
-    const { name, description, price, category, stock, bestseller } = req.body;
+    const { name, description, price, category, stock, bestseller, seller } =
+      req.body;
 
     const image1 = req.files?.image1?.[0];
     const image2 = req.files?.image2?.[0];
@@ -38,6 +40,7 @@ const addProduct = async (req, res) => {
 
     // Buat objek produk untuk MongoDB
     const productData = new productModel({
+      seller,
       name,
       description,
       price: Number(price),
@@ -52,6 +55,11 @@ const addProduct = async (req, res) => {
 
     // Simpan ke database
     await productData.save();
+
+    // Tambah productCount pada seller
+    await sellerModel.findByIdAndUpdate(seller, {
+      $inc: { productCount: 1 },
+    });
 
     console.log("Produk berhasil ditambahkan:", productData);
 
@@ -139,7 +147,28 @@ const updateProduct = async (req, res) => {
 
 const removeProduct = async (req, res) => {
   try {
-    await productModel.findByIdAndDelete(req.body.id);
+    // await productModel.findByIdAndDelete(req.body.id);
+
+    const { productId } = req.body; // atau req.params
+
+    // Temukan produk yang akan dihapus
+    const product = await productModel.findById(productId);
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    // Simpan sellerId sebelum hapus
+    const sellerId = product.seller;
+
+    // Hapus produk
+    await productModel.findByIdAndDelete(productId);
+
+    // Kurangi productCount pada seller
+    await sellerModel.findByIdAndUpdate(sellerId, {
+      $inc: { productCount: -1 },
+    });
     res.json({ success: true, message: "Product Removed" });
   } catch (error) {
     console.log(error);
@@ -147,6 +176,7 @@ const removeProduct = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
 const singleProduct = async (req, res) => {
   try {
     const { productId } = req.body;
@@ -160,10 +190,21 @@ const singleProduct = async (req, res) => {
   }
 };
 
+const getProductsSeller = async (req, res) => {
+  try {
+    const { seller } = req.params; // seller dari URL
+    const products = await productModel.find({ seller });
+    res.json({ success: true, products });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   addProduct,
   listProducts,
   updateProduct,
   removeProduct,
   singleProduct,
+  getProductsSeller,
 };

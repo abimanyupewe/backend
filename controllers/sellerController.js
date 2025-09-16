@@ -4,8 +4,12 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
 import { sendOTPWhatsApp } from "../middleware/WhatsApp.js";
-import isEmail from "validator/lib/isEmail.js";
-import userModel from "../models/userModels.js";
+import jwt from "jsonwebtoken";
+// import userModel from "../models/userModels.js";
+
+const createToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET);
+};
 
 const loginSeller = async (req, res) => {
   try {
@@ -30,15 +34,15 @@ const loginSeller = async (req, res) => {
       });
     }
 
-    if (!user) {
-      return res.json({ success: false, message: "User doesn't exist" });
+    if (!seller) {
+      return res.json({ success: false, message: "Seller doesn't exist" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, seller.password);
 
     if (isMatch) {
-      const token = createToken(user._id);
-      res.json({ success: true, token });
+      const token = createToken(seller._id);
+      res.json({ success: true, message: "Login successful", token });
     } else {
       res.json({ success: false, message: "Invalid credentials" });
     }

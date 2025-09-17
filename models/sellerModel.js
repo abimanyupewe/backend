@@ -24,10 +24,13 @@ const sellerSchema = new mongoose.Schema(
     email: {
       type: String,
     },
-    rating: {
-      type: Number,
-      default: 0,
-    },
+    ratings: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+        value: { type: Number, min: 0, max: 5 },
+        comment: { type: String },
+      },
+    ],
     productCount: {
       type: Number,
       default: 0,

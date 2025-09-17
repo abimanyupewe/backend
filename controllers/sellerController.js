@@ -256,6 +256,52 @@ const verifySellerOTP = async (req, res) => {
   }
 };
 
+const rateSeller = async (req, res) => {
+  try {
+    const { sellerId, value, comment } = req.body;
+    const userId = req.user._id; // dari autentikasi
+
+    // Cek apakah user sudah pernah rating seller ini
+    const seller = await sellerModel.findById(sellerId);
+    const existing = seller.ratings.find((r) => r.user.toString() === userId);
+
+    if (existing) {
+      // Update rating lama
+      existing.value = value;
+      existing.comment = comment;
+    } else {
+      // Tambah rating baru
+      seller.ratings.push({ user: userId, value, comment });
+    }
+
+
+    if (existing) {
+      // Update rating lama
+      existing.value = value;
+      existing.comment = comment;
+    } else {
+      // Tambah rating baru
+      product.ratings.push({ user: userId, value, comment });
+    }
+
+    // Hitung rata-rata rating
+    const avg =
+      product.ratings.reduce((sum, r) => sum + r.value, 0) /
+      product.ratings.length;
+    product.rating = avg;
+
+    await product.save();
+
+    res.json({
+      success: true,
+      rating: product.rating,
+      ratings: product.ratings,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   registerSeller,
   loginSeller,
@@ -264,4 +310,5 @@ export {
   removeSeller,
   singleSeller,
   verifySellerOTP,
+  rateSeller,
 };

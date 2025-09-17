@@ -6,10 +6,14 @@ import connectCloudinary from "./config/cloudinary.js";
 import userRouter from "./routes/userRoute.js";
 import productRouter from "./routes/productRoute.js";
 import adminRouter from "./routes/adminRoute.js";
+import courseRouter from "./routes/courseRoute.js";
+import mentorRouter from "./routes/mentorRoute.js";
 
 import userModel from "./models/userModels.js";
 import sellerModel from "./models/sellerModel.js";
 import sellerRouter from "./routes/sellerRoute.js";
+import adminModel from "./models/adminModel.js";
+import categoryRouter from "./routes/categoryRoute.js";
 
 setInterval(async () => {
   await userModel.deleteMany({
@@ -18,6 +22,10 @@ setInterval(async () => {
   });
   await sellerModel.deleteMany({
     isVerifed: false,
+    otpExpired: { $lt: new Date() },
+  });
+  await adminModel.deleteMany({
+    status: "pending",
     otpExpired: { $lt: new Date() },
   });
 }, 60 * 1000); // 1 menit
@@ -38,8 +46,13 @@ connectCloudinary(); // connect to cloudinary
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
 app.use("/api/seller", sellerRouter);
+app.use("/api/mentor", mentorRouter);
 // product
 app.use("/api/product", productRouter);
+// course
+app.use("/api/course", courseRouter);
+// category
+app.use("/api/category", categoryRouter);
 
 app.get("/", (req, res) => {
   res.send("Welcome to Florera API!");

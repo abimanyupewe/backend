@@ -25,11 +25,23 @@ const productSchema = new mongoose.Schema({
     min: 0,
     default: 0,
   },
+  soldCount: {
+    type: Number,
+    default: 0,
+  },
   rating: {
     type: Number,
+    default: 0,
     min: 0,
     max: 5,
   },
+  ratings: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+      value: { type: Number, min: 1, max: 5 },
+      comment: { type: String },
+    },
+  ],
   seller: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "seller",

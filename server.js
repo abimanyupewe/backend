@@ -16,6 +16,7 @@ import adminModel from "./models/adminModel.js";
 import mentorModel from "./models/mentorModel.js";
 import categoryRouter from "./routes/categoryRoute.js";
 import midtransRouter from "./routes/midtransRoute.js";
+import cartRouter from "./routes/cartRoute.js";
 
 setInterval(async () => {
   await userModel.deleteMany({
@@ -60,6 +61,8 @@ app.use("/api/product", productRouter);
 app.use("/api/course", courseRouter);
 // category
 app.use("/api/category", categoryRouter);
+// cart
+app.use("/api/cart", cartRouter);
 
 // payment 
 app.use("/api/payment/midtrans", midtransRouter);

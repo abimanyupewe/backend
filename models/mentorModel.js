@@ -4,7 +4,6 @@ const mentorSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
       trim: true,
     },
     bio: {
@@ -32,6 +31,11 @@ const mentorSchema = new mongoose.Schema(
     email: {
       type: String,
     },
+    role: {
+      type: String,
+      enum: ["user", "seller", "mentor", "admin"],
+      default: "mentor",
+    },
     rating: {
       type: Number,
       default: 0,
@@ -56,7 +60,7 @@ const mentorSchema = new mongoose.Schema(
     profileImage: {
       type: String,
     },
-    isApprovedByAdmin: { type: Boolean, default: false },
+    isApprovedByAdmin: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     isVerifed: { type: Boolean, default: false },
     otp: {
       type: String,

@@ -55,7 +55,7 @@ const loginSeller = async (req, res) => {
 // Register seller (buat seller baru)
 const registerSeller = async (req, res) => {
   try {
-    const { name, shopName, emailOrPhone, password, repassword } = req.body;
+    const { shopName, emailOrPhone, password, repassword } = req.body;
 
     // Deteksi email atau phone dari input
     const isEmail = validator.isEmail(emailOrPhone);
@@ -122,7 +122,6 @@ const registerSeller = async (req, res) => {
 
     // Buat seller baru
     const sellerData = new sellerModel({
-      name,
       shopName,
       email: isEmail ? emailOrPhone : undefined,
       phone: isPhone ? emailOrPhone : undefined,
@@ -171,18 +170,17 @@ const updateSeller = async (req, res) => {
   try {
     const { id, ...updateData } = req.body;
 
-    const dataUser = await sellerModel.findById(id);
+    const dataSeller = await sellerModel.findById(id);
 
-    if (!dataUser) {
+    if (!dataSeller) {
       return res
         .status(404)
         .json({ success: false, message: "Seller not found" });
     }
 
-    updateData.email = updateData.email || dataUser.email;
-    updateData.phone = updateData.phone || dataUser.phone;
-    updateData.shopName = updateData.shopName || dataUser.shopName;
-    updateData.name = updateData.name || dataUser.name;
+    updateData.email = updateData.email || dataSeller.email;
+    updateData.phone = updateData.phone || dataSeller.phone;
+    updateData.shopName = updateData.shopName || dataSeller.shopName;
 
     const image = req.files?.profileImage?.[0];
     if (image) {

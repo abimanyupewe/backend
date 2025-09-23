@@ -13,6 +13,7 @@ import userModel from "./models/userModels.js";
 import sellerModel from "./models/sellerModel.js";
 import sellerRouter from "./routes/sellerRoute.js";
 import adminModel from "./models/adminModel.js";
+import mentorModel from "./models/mentorModel.js";
 import categoryRouter from "./routes/categoryRoute.js";
 
 setInterval(async () => {
@@ -24,7 +25,12 @@ setInterval(async () => {
     isVerifed: false,
     otpExpired: { $lt: new Date() },
   });
+  await mentorModel.deleteMany({
+    isVerifed: false,
+    otpExpired: { $lt: new Date() },
+  });
   await adminModel.deleteMany({
+    isVerifed: false,
     status: "pending",
     otpExpired: { $lt: new Date() },
   });

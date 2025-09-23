@@ -1,5 +1,5 @@
 import express from "express";
-
+import upload from "../middleware/multer.js";
 import {
   addCourse,
   getAllCourses,
@@ -10,10 +10,10 @@ import {
 
 const router = express.Router();
 
-router.post("/add", addCourse);
+router.post("/add", upload.single("thumbnail"), addCourse);
 router.get("/all", getAllCourses);
-router.get("/get/:id", getCourse);
-router.put("/update/:id", updateCourse);
-router.delete("/delete/:id", deleteCourse);
+router.get("/get", getCourse);
+router.put("/update", updateCourse);
+router.delete("/delete", deleteCourse);
 
 export default router;

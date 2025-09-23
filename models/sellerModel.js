@@ -24,6 +24,11 @@ const sellerSchema = new mongoose.Schema(
     email: {
       type: String,
     },
+    role: {
+      type: String,
+      enum: ["user", "seller", "mentor", "admin"],
+      default: "seller",
+    },
     ratings: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },

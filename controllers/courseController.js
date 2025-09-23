@@ -1,3 +1,7 @@
+import { v2 as cloudinary } from "cloudinary";
+import courseModel from "../models/courseModel.js";
+import mentorModel from "../models/mentorModel.js";
+
 const addCourse = async (req, res) => {
   try {
     const {
@@ -21,19 +25,33 @@ const addCourse = async (req, res) => {
         .json({ success: false, message: "Missing required fields" });
     }
 
+    let thumbnailUrl = thumbnail;
+    const image = req.files;
+    if (image) {
+      const result = await cloudinary.uploader.upload(image.path, {
+        resource_type: "image",
+      });
+      thumbnailUrl = result.secure_url;
+    }
+
     const course = new courseModel({
       title,
       description,
       mentor,
       price,
       discountPrice,
-      thumbnail,
+      thumbnail: thumbnailUrl,
       category,
       level,
       duration,
       benefits,
       modules,
       totalModules: modules ? modules.length : 0,
+    });
+
+    // Tambah courseCount pada mentor
+    await mentorModel.findByIdAndUpdate(mentor, {
+      $inc: { courseCount: 1 },
     });
 
     await course.save();
@@ -45,19 +63,34 @@ const addCourse = async (req, res) => {
 };
 
 const getAllCourses = async (req, res) => {
-    try {
-        
-    } catch (error) {
-        
-    }
-}
+  try {
+    const courses = await courseModel.find();
+    res.status(200).json({ success: true, courses });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-const getCourse = async (req, res) => {}
+const getCourse = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const course = await courseModel.findById(id);
+    if (!course) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
+    }
+
+    res.status(200).json({ success: true, course });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 const updateCourse = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updates = req.body;
+    const { id, updates } = req.body;
 
     const course = await courseModel.findByIdAndUpdate(id, updates, {
       new: true,
@@ -65,7 +98,9 @@ const updateCourse = async (req, res) => {
     });
 
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
     }
 
     res.status(200).json({ success: true, message: "Course updated", course });
@@ -76,13 +111,25 @@ const updateCourse = async (req, res) => {
 
 const deleteCourse = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.body;
 
-    const course = await courseModel.findByIdAndDelete(id);
-
+    // Ambil course dulu
+    const course = await courseModel.findById(id);
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
     }
+
+    const mentorId = course.mentor;
+
+    // Hapus course
+    await courseModel.findByIdAndDelete(id);
+
+    // Kurangi courseCount pada mentor
+    await mentorModel.findByIdAndUpdate(mentorId, {
+      $inc: { courseCount: -1 },
+    });
 
     res.status(200).json({ success: true, message: "Course deleted" });
   } catch (error) {

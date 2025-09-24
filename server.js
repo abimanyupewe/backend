@@ -68,7 +68,7 @@ app.use("/api/cart", cartRouter);
 app.use("/api/payment/midtrans", midtransRouter);
 
 app.get("/", (req, res) => {
-  res.send("Welcome to Florera API!");
+  res.json("Welcome to Florera API!");
 });
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));

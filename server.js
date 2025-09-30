@@ -42,9 +42,33 @@ setInterval(async () => {
   });
 }, 60 * 1000); // 1 menit
 
+// Allowed origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  process.env.FRONTEND_FLORERA?.replace(/\/$/, ""),
+  process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""),
+  process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""),
+];
+
 // middleware
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 connectDB(); // connect to MongoDB
 connectCloudinary(); // connect to cloudinary

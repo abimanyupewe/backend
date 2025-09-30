@@ -2,7 +2,6 @@ import { v2 as cloudinary } from "cloudinary";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
-import { sendOTPWhatsApp } from "../middleware/WhatsApp.js";
 import jwt from "jsonwebtoken";
 import mentorModel from "../models/mentorModel.js";
 
@@ -12,26 +11,24 @@ const createToken = (id) => {
 
 const loginMentor = async (req, res) => {
   try {
-    const { emailOrPhone, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!emailOrPhone || !password) {
+    if (!email || !password) {
       return res.json({
         success: false,
-        message: "emailOrPhone and password are required",
+        message: "Email and password are required",
       });
     }
 
-    let mentor;
-    if (validator.isEmail(emailOrPhone)) {
-      mentor = await mentorModel.findOne({ email: emailOrPhone });
-    } else if (validator.isMobilePhone(emailOrPhone, "id-ID")) {
-      mentor = await mentorModel.findOne({ phone: emailOrPhone });
-    } else {
+    // Validasi email format
+    if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Input must be a valid email or phone number",
+        message: "Please enter a valid email address",
       });
     }
+
+    const mentor = await mentorModel.findOne({ email });
 
     if (!mentor) {
       return res.json({ success: false, message: "Mentor doesn't exist" });
@@ -39,28 +36,43 @@ const loginMentor = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, mentor.password);
     if (!isMatch) {
-      return res.json({ success: false, message: "Invalid password" });
+      return res.json({ success: false, message: "Invalid credentials" });
     }
 
     const token = createToken(mentor._id);
-    res.json({ success: true, message: "Login successful", token });
+    res.json({ success: true, message: "Login successful", token, mentor });
   } catch (error) {
+    console.error(error);
     res.json({ success: false, message: error.message });
   }
 };
 
 const registerMentor = async (req, res) => {
   try {
-    const { emailOrPhone, password, repassword } = req.body;
+    const { name, email, password, repassword, expertise, experience } = req.body;
 
-    // Deteksi email atau phone dari input
-    const isEmail = validator.isEmail(emailOrPhone);
-    const isPhone = validator.isMobilePhone(emailOrPhone, "id-ID");
-
-    if (!isEmail && !isPhone) {
+    // Validasi field wajib
+    if (!name || !email || !expertise) {
       return res.json({
         success: false,
-        message: "Input must be a valid email or phone number",
+        message: "Name, email, and expertise are required",
+      });
+    }
+
+    // Validasi email format
+    if (!validator.isEmail(email)) {
+      return res.json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    // Cek duplikasi email
+    const exists = await mentorModel.findOne({ email });
+    if (exists) {
+      return res.json({
+        success: false,
+        message: "Email already exists",
       });
     }
 
@@ -102,12 +114,14 @@ const registerMentor = async (req, res) => {
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpired = Date.now() + 1 * 30 * 1000; // 1 menit
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
 
     // Simpan mentor baru ke database
     const mentor = new mentorModel({
-      email: isEmail ? emailOrPhone : undefined,
-      phone: isPhone ? emailOrPhone : undefined,
+      name,
+      email,
+      expertise,
+      experience: experience || "",
       password: hashedPassword,
       otp,
       otpExpired,
@@ -119,18 +133,25 @@ const registerMentor = async (req, res) => {
 
     await mentor.save();
 
-    // Kirim OTP ke email atau WhatsApp
-    if (isEmail) {
-      sendOTPCode(emailOrPhone, otp);
-    } else if (isPhone) {
-      sendOTPWhatsApp(emailOrPhone, otp);
+    // Kirim OTP ke email
+    try {
+      await sendOTPCode(email, otp);
+    } catch (emailError) {
+      console.error("Email sending error:", emailError.message);
+      // Hapus mentor jika email gagal dikirim
+      await mentorModel.findByIdAndDelete(mentor._id);
+      return res.json({
+        success: false,
+        message: "Failed to send OTP email, please try again",
+      });
     }
 
     res.json({
       success: true,
-      message: "Mentor registered, OTP sent",
+      message: "Mentor registered successfully, OTP sent to email",
     });
   } catch (error) {
+    console.error(error);
     res.json({
       success: false,
       message: error.message,
@@ -153,8 +174,33 @@ const updateMentor = async (req, res) => {
         .json({ success: false, message: "Mentor not found" });
     }
 
+    // Jika field tidak diisi, isi dengan data lama
+    updateData.name = updateData.name || dataMentor.name;
     updateData.email = updateData.email || dataMentor.email;
-    updateData.phone = updateData.phone || dataMentor.phone;
+    updateData.expertise = updateData.expertise || dataMentor.expertise;
+    updateData.experience = updateData.experience || dataMentor.experience;
+
+    // Validasi email jika diubah
+    if (updateData.email && updateData.email !== dataMentor.email) {
+      if (!validator.isEmail(updateData.email)) {
+        return res.json({
+          success: false,
+          message: "Please enter a valid email address",
+        });
+      }
+
+      // Cek duplikasi email baru
+      const emailExists = await mentorModel.findOne({
+        email: updateData.email,
+        _id: { $ne: id },
+      });
+      if (emailExists) {
+        return res.json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
 
     // Handle certificates (multiple file support)
     if (req.files?.certificates) {
@@ -182,6 +228,7 @@ const updateMentor = async (req, res) => {
 
     res.json({ success: true, message: "Mentor updated", mentor });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -195,25 +242,40 @@ const deleteMentor = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Mentor ID is required" });
 
-    await mentorModel.findByIdAndDelete(id);
+    const mentor = await mentorModel.findByIdAndDelete(id);
+    if (!mentor) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Mentor not found" });
+    }
+
     res.json({ success: true, message: "Mentor deleted" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
 const getAllMentors = async (req, res) => {
   try {
-    const mentors = await mentorModel.find();
-    res.json({ success: true, mentors });
+    const { status, expertise } = req.query;
+    
+    // Build filter
+    const filter = {};
+    if (status) filter.isApprovedByAdmin = status;
+    if (expertise) filter.expertise = new RegExp(expertise, 'i');
+
+    const mentors = await mentorModel.find(filter).select('-password -otp -otpExpired');
+    res.json({ success: true, mentors, count: mentors.length });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
 const getMentor = async (req, res) => {
   try {
-    const mentor = await mentorModel.findById(req.params.id);
+    const mentor = await mentorModel.findById(req.params.id).select('-password -otp -otpExpired');
     if (!mentor) {
       return res
         .status(404)
@@ -221,6 +283,7 @@ const getMentor = async (req, res) => {
     }
     res.json({ success: true, mentor });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -234,15 +297,16 @@ const verifyMentorOtp = async (req, res) => {
     if (!mentor) {
       return res.json({
         success: false,
-        message: "Invalid OTP",
+        message: "Invalid OTP code",
       });
     }
 
     // Cek apakah OTP sudah expired
     if (mentor.otpExpired < Date.now()) {
+      await mentorModel.findByIdAndDelete(mentor._id);
       return res.json({
         success: false,
-        message: "OTP has expired",
+        message: "OTP code has expired, please register again",
       });
     }
 
@@ -253,13 +317,116 @@ const verifyMentorOtp = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Mentor verified successfully",
+      message: "Mentor email verified successfully",
+      mentor: {
+        id: mentor._id,
+        name: mentor.name,
+        email: mentor.email,
+        expertise: mentor.expertise,
+        isVerifed: mentor.isVerifed,
+        isApprovedByAdmin: mentor.isApprovedByAdmin
+      }
     });
   } catch (error) {
+    console.error(error);
     res.json({
       success: false,
       message: error.message,
     });
+  }
+};
+
+// Approve/Reject mentor by admin
+const approveMentor = async (req, res) => {
+  try {
+    const { id, status } = req.body; // status: 'approved' or 'rejected'
+
+    if (!id || !status) {
+      return res.json({
+        success: false,
+        message: "Mentor ID and status are required",
+      });
+    }
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.json({
+        success: false,
+        message: "Status must be 'approved' or 'rejected'",
+      });
+    }
+
+    const mentor = await mentorModel.findById(id);
+    if (!mentor) {
+      return res.json({ success: false, message: "Mentor not found" });
+    }
+
+    mentor.isApprovedByAdmin = status;
+    mentor.updatedAt = new Date();
+    await mentor.save();
+
+    res.json({
+      success: true,
+      message: `Mentor ${status} successfully`,
+      mentor: {
+        id: mentor._id,
+        name: mentor.name,
+        email: mentor.email,
+        expertise: mentor.expertise,
+        isApprovedByAdmin: mentor.isApprovedByAdmin
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Resend OTP function (bonus)
+const resendMentorOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !validator.isEmail(email)) {
+      return res.json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    const mentor = await mentorModel.findOne({ email, isVerifed: false });
+    if (!mentor) {
+      return res.json({
+        success: false,
+        message: "Mentor not found or already verified",
+      });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+
+    mentor.otp = otp;
+    mentor.otpExpired = otpExpired;
+    await mentor.save();
+
+    // Kirim OTP baru ke email
+    try {
+      await sendOTPCode(email, otp);
+    } catch (emailError) {
+      console.error("Email sending error:", emailError.message);
+      return res.json({
+        success: false,
+        message: "Failed to send OTP email, please try again",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "New OTP sent to email",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -271,4 +438,6 @@ export {
   getAllMentors,
   getMentor,
   verifyMentorOtp,
+  approveMentor,
+  resendMentorOTP,
 };

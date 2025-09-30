@@ -3,9 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
-import { sendOTPWhatsApp } from "../middleware/WhatsApp.js";
 import jwt from "jsonwebtoken";
-// import userModel from "../models/userModels.js";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
@@ -13,26 +11,24 @@ const createToken = (id) => {
 
 const loginSeller = async (req, res) => {
   try {
-    const { emailOrPhone, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!emailOrPhone || !password) {
+    if (!email || !password) {
       return res.json({
         success: false,
-        message: "emailOrPhone and password are required",
+        message: "Email and password are required",
       });
     }
 
-    let seller;
-    if (validator.isEmail(emailOrPhone)) {
-      seller = await sellerModel.findOne({ email: emailOrPhone });
-    } else if (validator.isMobilePhone(emailOrPhone, "id-ID")) {
-      seller = await sellerModel.findOne({ phone: emailOrPhone });
-    } else {
+    // Validasi email format
+    if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Input must be a valid email or phone number",
+        message: "Please enter a valid email address",
       });
     }
+
+    const seller = await sellerModel.findOne({ email });
 
     if (!seller) {
       return res.json({ success: false, message: "Seller doesn't exist" });
@@ -55,29 +51,31 @@ const loginSeller = async (req, res) => {
 // Register seller (buat seller baru)
 const registerSeller = async (req, res) => {
   try {
-    const { shopName, emailOrPhone, password, repassword } = req.body;
+    const { shopName, email, password, repassword } = req.body;
 
-    // Deteksi email atau phone dari input
-    const isEmail = validator.isEmail(emailOrPhone);
-    const isPhone = validator.isMobilePhone(emailOrPhone, "id-ID");
-    if (!isEmail && !isPhone) {
+    // Validasi field wajib
+    if (!shopName || !email) {
       return res.json({
         success: false,
-        message: "Contact must be a valid email or phone number",
+        message: "Shop name and email are required",
       });
     }
 
-    // Cek duplikasi
-    let exists;
-    if (isEmail) {
-      exists = await sellerModel.findOne({ email: emailOrPhone });
-      if (exists)
-        return res.json({ success: false, message: "Email already exists" });
+    // Validasi email format
+    if (!validator.isEmail(email)) {
+      return res.json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
     }
-    if (isPhone) {
-      exists = await sellerModel.findOne({ phone: emailOrPhone });
-      if (exists)
-        return res.json({ success: false, message: "Phone already exists" });
+
+    // Cek duplikasi email
+    const exists = await sellerModel.findOne({ email });
+    if (exists) {
+      return res.json({
+        success: false,
+        message: "Email already exists",
+      });
     }
 
     // Validasi password
@@ -118,13 +116,12 @@ const registerSeller = async (req, res) => {
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpired = Date.now() + 1 * 60 * 1000; // 1 menit
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
 
     // Buat seller baru
     const sellerData = new sellerModel({
       shopName,
-      email: isEmail ? emailOrPhone : undefined,
-      phone: isPhone ? emailOrPhone : undefined,
+      email,
       otp,
       otpExpired,
       password: hashedPassword,
@@ -137,16 +134,22 @@ const registerSeller = async (req, res) => {
 
     await sellerData.save();
 
-    // Kirim OTP ke email atau WhatsApp
-    if (isEmail) {
-      sendOTPCode(emailOrPhone, otp);
-    } else if (isPhone) {
-      sendOTPWhatsApp(emailOrPhone, otp);
+    // Kirim OTP ke email
+    try {
+      await sendOTPCode(email, otp);
+    } catch (emailError) {
+      console.error("Email sending error:", emailError.message);
+      // Hapus seller jika email gagal dikirim
+      await sellerModel.findByIdAndDelete(sellerData._id);
+      return res.json({
+        success: false,
+        message: "Failed to send OTP email, please try again",
+      });
     }
 
     res.json({
       success: true,
-      message: "Seller registered, OTP sent",
+      message: "Seller registered successfully, OTP sent to email",
     });
   } catch (error) {
     console.error(error);
@@ -178,9 +181,31 @@ const updateSeller = async (req, res) => {
         .json({ success: false, message: "Seller not found" });
     }
 
+    // Jika field tidak diisi, isi dengan data lama
     updateData.email = updateData.email || dataSeller.email;
-    updateData.phone = updateData.phone || dataSeller.phone;
     updateData.shopName = updateData.shopName || dataSeller.shopName;
+
+    // Validasi email jika diubah
+    if (updateData.email && updateData.email !== dataSeller.email) {
+      if (!validator.isEmail(updateData.email)) {
+        return res.json({
+          success: false,
+          message: "Please enter a valid email address",
+        });
+      }
+
+      // Cek duplikasi email baru
+      const emailExists = await sellerModel.findOne({
+        email: updateData.email,
+        _id: { $ne: id },
+      });
+      if (emailExists) {
+        return res.json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
 
     const image = req.files?.profileImage?.[0];
     if (image) {
@@ -204,7 +229,10 @@ const updateSeller = async (req, res) => {
 // Remove seller
 const removeSeller = async (req, res) => {
   try {
-    await sellerModel.findByIdAndDelete(req.body.id);
+    const seller = await sellerModel.findByIdAndDelete(req.body.id);
+    if (!seller) {
+      return res.json({ success: false, message: "Seller not found" });
+    }
     res.json({ success: true, message: "Seller removed" });
   } catch (error) {
     console.error(error);
@@ -216,6 +244,9 @@ const removeSeller = async (req, res) => {
 const singleSeller = async (req, res) => {
   try {
     const seller = await sellerModel.findById(req.body.id);
+    if (!seller) {
+      return res.json({ success: false, message: "Seller not found" });
+    }
     res.json({ success: true, seller });
   } catch (error) {
     console.error(error);
@@ -231,14 +262,14 @@ const verifySellerOTP = async (req, res) => {
     const seller = await sellerModel.findOne({ otp: code });
 
     if (!seller) {
-      return res.json({ success: false, message: "Invalid OTP" });
+      return res.json({ success: false, message: "Invalid OTP code" });
     }
 
     if (seller.otpExpired < Date.now()) {
       await sellerModel.findByIdAndDelete(seller._id);
       return res.json({
         success: false,
-        message: "OTP expired, please register again",
+        message: "OTP code has expired, please register again",
       });
     }
 
@@ -247,7 +278,16 @@ const verifySellerOTP = async (req, res) => {
     seller.otpExpired = undefined;
     await seller.save();
 
-    res.json({ success: true, message: "Seller verified", seller });
+    res.json({ 
+      success: true, 
+      message: "Seller email verified successfully", 
+      seller: {
+        id: seller._id,
+        shopName: seller.shopName,
+        email: seller.email,
+        isVerifed: seller.isVerifed
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -259,41 +299,105 @@ const rateSeller = async (req, res) => {
     const { sellerId, value, comment } = req.body;
     const userId = req.user._id; // dari autentikasi
 
+    // Validasi input
+    if (!sellerId || !value) {
+      return res.json({
+        success: false,
+        message: "Seller ID and rating value are required",
+      });
+    }
+
+    if (value < 1 || value > 5) {
+      return res.json({
+        success: false,
+        message: "Rating value must be between 1 and 5",
+      });
+    }
+
     // Cek apakah user sudah pernah rating seller ini
     const seller = await sellerModel.findById(sellerId);
+    if (!seller) {
+      return res.json({ success: false, message: "Seller not found" });
+    }
+
     const existing = seller.ratings.find((r) => r.user.toString() === userId);
 
     if (existing) {
       // Update rating lama
       existing.value = value;
-      existing.comment = comment;
+      existing.comment = comment || "";
+      existing.updatedAt = new Date();
     } else {
       // Tambah rating baru
-      seller.ratings.push({ user: userId, value, comment });
-    }
-
-
-    if (existing) {
-      // Update rating lama
-      existing.value = value;
-      existing.comment = comment;
-    } else {
-      // Tambah rating baru
-      product.ratings.push({ user: userId, value, comment });
+      seller.ratings.push({ 
+        user: userId, 
+        value, 
+        comment: comment || "",
+        createdAt: new Date()
+      });
     }
 
     // Hitung rata-rata rating
     const avg =
-      product.ratings.reduce((sum, r) => sum + r.value, 0) /
-      product.ratings.length;
-    product.rating = avg;
+      seller.ratings.reduce((sum, r) => sum + r.value, 0) /
+      seller.ratings.length;
+    seller.rating = Math.round(avg * 10) / 10; // Bulatkan ke 1 desimal
 
-    await product.save();
+    await seller.save();
 
     res.json({
       success: true,
-      rating: product.rating,
-      ratings: product.ratings,
+      message: existing ? "Rating updated" : "Rating added",
+      rating: seller.rating,
+      totalRatings: seller.ratings.length,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Resend OTP function (bonus)
+const resendSellerOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !validator.isEmail(email)) {
+      return res.json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    const seller = await sellerModel.findOne({ email, isVerifed: false });
+    if (!seller) {
+      return res.json({
+        success: false,
+        message: "Seller not found or already verified",
+      });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+
+    seller.otp = otp;
+    seller.otpExpired = otpExpired;
+    await seller.save();
+
+    // Kirim OTP baru ke email
+    try {
+      await sendOTPCode(email, otp);
+    } catch (emailError) {
+      console.error("Email sending error:", emailError.message);
+      return res.json({
+        success: false,
+        message: "Failed to send OTP email, please try again",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "New OTP sent to email",
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -309,4 +413,5 @@ export {
   singleSeller,
   verifySellerOTP,
   rateSeller,
+  resendSellerOTP,
 };

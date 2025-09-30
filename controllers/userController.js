@@ -4,10 +4,6 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import { sendOTPCode } from "../middleware/Email.js";
-import {
-  sendOTPWhatsApp,
-  sendVerifiedWhatsApp,
-} from "../middleware/WhatsApp.js";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
@@ -15,26 +11,23 @@ const createToken = (id) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { emailOrPhone, password } = req.body;
-    if (!emailOrPhone || !password) {
+    const { email, password } = req.body;
+    if (!email || !password) {
       return res.json({
         success: false,
-        message: "emailOrPhone and password are required",
+        message: "Email and password are required",
       });
     }
 
-    // Deteksi email atau phone
-    let user;
-    if (validator.isEmail(emailOrPhone)) {
-      user = await userModel.findOne({ email: emailOrPhone });
-    } else if (validator.isMobilePhone(emailOrPhone, "id-ID")) {
-      user = await userModel.findOne({ phone: emailOrPhone });
-    } else {
+    // Validasi email format
+    if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Input must be a valid email or phone number",
+        message: "Please enter a valid email address",
       });
     }
+
+    const user = await userModel.findOne({ email });
 
     if (!user) {
       return res.json({ success: false, message: "User doesn't exist" });
@@ -56,38 +49,30 @@ const loginUser = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, emailOrPhone, password, repassword } = req.body;
+    const { name, email, password, repassword } = req.body;
 
     // Validasi field wajib
-    if (!name || !emailOrPhone) {
+    if (!name || !email) {
       return res.json({
         success: false,
-        message: "Name and emailOrPhone are required",
+        message: "Name and email are required",
       });
     }
 
-    // Deteksi email atau phone
-    const isEmail = validator.isEmail(emailOrPhone);
-    const isPhone = validator.isMobilePhone(emailOrPhone, "id-ID");
-
-    if (!isEmail && !isPhone) {
+    // Validasi email format
+    if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "emailOrPhone must be a valid email or phone number",
+        message: "Please enter a valid email address",
       });
     }
 
-    // Cek duplikasi
-    let exists;
-    if (isEmail) {
-      exists = await userModel.findOne({ email: emailOrPhone });
-    } else {
-      exists = await userModel.findOne({ phone: emailOrPhone });
-    }
+    // Cek duplikasi email
+    const exists = await userModel.findOne({ email });
     if (exists) {
       return res.json({
         success: false,
-        message: isEmail ? "Email already exists" : "Phone already exists",
+        message: "Email already exists",
       });
     }
 
@@ -117,18 +102,17 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // hashed password
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpired = Date.now() + 1 * 60 * 1000; // 1 menit dari sekarang
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit dari sekarang
 
     // Buat user baru
     const newUser = new userModel({
       name,
-      email: isEmail ? emailOrPhone : undefined,
-      phone: isPhone ? emailOrPhone : undefined,
+      email,
       otp,
       otpExpired,
       isVerifed: false,
@@ -139,16 +123,22 @@ const registerUser = async (req, res) => {
 
     await newUser.save();
 
-    // Kirim OTP ke email atau phone
-    if (isEmail) {
-      sendOTPCode(emailOrPhone, otp);
-    } else if (isPhone) {
-      sendOTPWhatsApp(name, emailOrPhone, otp);
+    // Kirim OTP ke email
+    try {
+      await sendOTPCode(email, otp);
+    } catch (emailError) {
+      console.error("Email sending error:", emailError.message);
+      // Hapus user jika email gagal dikirim
+      await userModel.findByIdAndDelete(newUser._id);
+      return res.json({
+        success: false,
+        message: "Failed to send OTP email, please try again",
+      });
     }
 
     res.json({
       success: true,
-      message: "User registered successfully, OTP sent",
+      message: "User registered successfully, OTP sent to email",
     });
   } catch (error) {
     console.log(error);
@@ -165,11 +155,35 @@ const updateUser = async (req, res) => {
 
     // Ambil data user lama
     const oldUser = await userModel.findById(id);
+    if (!oldUser) {
+      return res.json({ success: false, message: "User not found" });
+    }
 
     // Jika field tidak diisi, isi dengan data lama
     updateData.name = updateData.name || oldUser.name;
     updateData.email = updateData.email || oldUser.email;
-    updateData.phone = updateData.phone || oldUser.phone;
+
+    // Validasi email jika diubah
+    if (updateData.email && updateData.email !== oldUser.email) {
+      if (!validator.isEmail(updateData.email)) {
+        return res.json({
+          success: false,
+          message: "Please enter a valid email address",
+        });
+      }
+
+      // Cek duplikasi email baru
+      const emailExists = await userModel.findOne({
+        email: updateData.email,
+        _id: { $ne: id },
+      });
+      if (emailExists) {
+        return res.json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
 
     // Ambil file gambar jika ada
     const image = req.files?.profileImage?.[0];
@@ -209,10 +223,10 @@ const verOTP = async (req, res) => {
     const { code } = req.body;
     const user = await userModel.findOne({ otp: code });
     if (!user) {
-      return res.json({ success: false, message: "invalid OTP code" });
+      return res.json({ success: false, message: "Invalid OTP code" });
     }
 
-    // cek apakah OTP sudah expired
+    // Cek apakah OTP sudah expired
     if (user.otpExpired < Date.now()) {
       await userModel.findByIdAndDelete(user._id);
       return res.json({
@@ -225,11 +239,17 @@ const verOTP = async (req, res) => {
     user.otp = undefined;
     user.otpExpired = undefined;
     await user.save();
-    if (user.phone) {
-      sendVerifiedWhatsApp(user.name, user.phone);
-    }
 
-    res.json({ success: true, message: "OTP verified successfully", user });
+    res.json({
+      success: true,
+      message: "Email verified successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerifed: user.isVerifed,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

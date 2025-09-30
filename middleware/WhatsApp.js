@@ -4,9 +4,9 @@ import qrcode from "qrcode-terminal";
 const client = new Client();
 
 // bisa diaktifkan jika ingin pake QR code
-// client.on("qr", (qr) => {
-//   qrcode.generate(qr, { small: true });
-// });
+client.on("qr", (qr) => {
+  qrcode.generate(qr, { small: true });
+});
 
 client.on("ready", () => {
   console.log("WhatsApp client is ready!");
@@ -14,7 +14,7 @@ client.on("ready", () => {
 
 client.initialize();
 
-export const sendOTPWhatsApp = async (name,phone, otp) => {
+export const sendOTPWhatsApp = async (name, phone, otp) => {
   // Format nomor: harus pakai kode negara, contoh: "6281234567890"
   const chatId = phone.replace(/^0/, "62") + "@c.us";
   const message = `Hallo ${name}, Kode OTP Florera Anda: ${otp}\nJangan bagikan kode ini ke siapa pun.`;

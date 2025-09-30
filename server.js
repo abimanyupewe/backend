@@ -8,7 +8,6 @@ import productRouter from "./routes/productRoute.js";
 import adminRouter from "./routes/adminRoute.js";
 import courseRouter from "./routes/courseRoute.js";
 import mentorRouter from "./routes/mentorRoute.js";
-
 import userModel from "./models/userModels.js";
 import sellerModel from "./models/sellerModel.js";
 import sellerRouter from "./routes/sellerRoute.js";
@@ -18,6 +17,11 @@ import categoryRouter from "./routes/categoryRoute.js";
 import midtransRouter from "./routes/midtransRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 
+// app config - HARUS DI SINI DULU
+const app = express();
+const port = process.env.PORT || 4000;
+
+// Auto cleanup expired OTP - PINDAH KE SINI
 setInterval(async () => {
   await userModel.deleteMany({
     isVerifed: false,
@@ -38,25 +42,20 @@ setInterval(async () => {
   });
 }, 60 * 1000); // 1 menit
 
-// app config (PINDAHKAN KE SINI)
-const app = express();
-const port = process.env.PORT || 4000;
-
 // Allowed origins
 const allowedOrigins = [
-  "http://localhost:3000", // development
-  "http://localhost:3001", // jika ada development lain
-  process.env.FRONTEND_FLORERA?.replace(/\/$/, ""), // https://florera-app.vercel.app
-  process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""), // https://florera-admin-seller.vercel.app
-  process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""), // https://florera-admin-mentor.vercel.app
+  "http://localhost:3000",
+  "http://localhost:3001",
+  process.env.FRONTEND_FLORERA?.replace(/\/$/, ""),
+  process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""),
+  process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""),
 ];
 
-// app config
+// middleware
 app.use(express.json());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -74,22 +73,15 @@ app.use(
 connectDB(); // connect to MongoDB
 connectCloudinary(); // connect to cloudinary
 
-// end point API
-// role
+// API routes
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
 app.use("/api/seller", sellerRouter);
 app.use("/api/mentor", mentorRouter);
-// product
 app.use("/api/product", productRouter);
-// course
 app.use("/api/course", courseRouter);
-// category
 app.use("/api/category", categoryRouter);
-// cart
 app.use("/api/cart", cartRouter);
-
-// payment
 app.use("/api/payment/midtrans", midtransRouter);
 
 app.get("/", (req, res) => {

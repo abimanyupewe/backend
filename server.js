@@ -38,32 +38,38 @@ setInterval(async () => {
   });
 }, 60 * 1000); // 1 menit
 
+// app config (PINDAHKAN KE SINI)
+const app = express();
+const port = process.env.PORT || 4000;
+
 // Allowed origins
 const allowedOrigins = [
   "http://localhost:3000", // development
   "http://localhost:3001", // jika ada development lain
-  process.env.FRONTEND_FLORERA?.replace(/\/$/, ''), // https://florera-app.vercel.app
-  process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ''), // https://florera-admin-seller.vercel.app
-  process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ''), // https://florera-admin-mentor.vercel.app
+  process.env.FRONTEND_FLORERA?.replace(/\/$/, ""), // https://florera-app.vercel.app
+  process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""), // https://florera-admin-seller.vercel.app
+  process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""), // https://florera-admin-mentor.vercel.app
 ];
 
 // app config
 app.use(express.json());
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Not allowed by CORS: ${origin}`));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 connectDB(); // connect to MongoDB
 connectCloudinary(); // connect to cloudinary

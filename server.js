@@ -17,7 +17,7 @@ import categoryRouter from "./routes/categoryRoute.js";
 import midtransRouter from "./routes/midtransRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 
-// app config - HARUS DI SINI DULU
+// app config
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -42,33 +42,9 @@ setInterval(async () => {
   });
 }, 60 * 1000); // 1 menit
 
-// Allowed origins
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  process.env.FRONTEND_FLORERA?.replace(/\/$/, ""),
-  process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""),
-  process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""),
-];
-
 // middleware
 app.use(express.json());
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Not allowed by CORS: ${origin}`));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use(cors());
 
 connectDB(); // connect to MongoDB
 connectCloudinary(); // connect to cloudinary

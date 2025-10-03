@@ -108,6 +108,7 @@ app.get("/", (req, res) => {
       mainApp: process.env.FRONTEND_FLORERA,
       adminSeller: process.env.FRONTEND_ADMIN_SELLER,
       adminMentor: process.env.FRONTEND_ADMIN_MENTOR,
+      adminFlorera: process.env.FRONTEND_FLORERA_ADMIN,
     },
   });
 });
@@ -128,6 +129,7 @@ app.listen(port, () => {
   console.log(`   - Main App: ${process.env.FRONTEND_FLORERA}`);
   console.log(`   - Admin Seller: ${process.env.FRONTEND_ADMIN_SELLER}`);
   console.log(`   - Admin Mentor: ${process.env.FRONTEND_ADMIN_MENTOR}`);
+  console.log(`   - Admin Florera: ${process.env.FRONTEND_FLORERA_ADMIN}`);
 });
 
 export default app;

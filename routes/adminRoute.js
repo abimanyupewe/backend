@@ -5,6 +5,7 @@ import {
   registerInvitedAdmin,
   disableAdmin,
   deleteAdmin,
+  getAdmin,
 } from "../controllers/adminController.js";
 import superAdminAuth from "../middleware/superAdmin.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -18,5 +19,6 @@ adminRouter.post("/invite", adminAuth, roleAuth("superadmin"), inviteAdmin);
 adminRouter.post("/register", registerInvitedAdmin);
 adminRouter.post("/disable", adminAuth, roleAuth("superadmin"), disableAdmin);
 adminRouter.delete("/delete", adminAuth, roleAuth("superadmin"), deleteAdmin);
+adminRouter.get("/get/:adminId", adminAuth, roleAuth("superadmin"), getAdmin);
 
 export default adminRouter;

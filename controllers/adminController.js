@@ -170,6 +170,28 @@ const deleteAdmin = async (req, res) => {
   }
 };
 
+const getAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await adminModel.findById(adminId);
+    if (!admin)
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
+
+    res.json({ success: true, data: admin });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // token yang dihasilkan admin, untuk credential saat mau add, remove, update product. jika ingin melakukan testing tambahkan header Authorization dengan nama <token>
 
-export { adminLogin, inviteAdmin, registerInvitedAdmin, disableAdmin, deleteAdmin };
+export {
+  adminLogin,
+  inviteAdmin,
+  registerInvitedAdmin,
+  disableAdmin,
+  deleteAdmin,
+  getAdmin,
+};

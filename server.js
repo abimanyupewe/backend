@@ -28,6 +28,7 @@ const allowedOrigins = [
   process.env.FRONTEND_FLORERA?.replace(/\/$/, ""), // Main app
   process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""), // Admin Seller
   process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""), // Admin Mentor
+  process.env.FRONTEND_FLORERA_ADMIN?.replace(/\/$/, ""), // Admin All in One
 ].filter(Boolean); // Remove undefined values
 
 // middleware

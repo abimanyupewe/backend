@@ -36,27 +36,40 @@ app.use(express.json({ limit: "10mb" }));
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
+      // Allow requests dengan no origin (mobile apps, Postman, curl, dll.)
       if (!origin) return callback(null, true);
+
+      // Development mode - lebih permisif
+      if (process.env.NODE_ENV !== "production") {
+        // Allow semua localhost untuk development
+        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+          return callback(null, true);
+        }
+      }
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.log(`❌ CORS blocked: ${origin}`);
-        callback(new Error(`Not allowed by CORS: ${origin}`));
+        console.log(`✅ Allowed origins:`, allowedOrigins);
+        // Jangan throw error, return false saja
+        callback(null, false);
       }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
-    optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-requested-with",
+      "Access-Control-Allow-Origin",
+      "Accept",
+      "X-Requested-With",
+    ],
+    preflightContinue: false,
+    optionsSuccessStatus: 200, // Legacy browser support
   })
 );
-
-// Debug CORS origins di development
-if (process.env.NODE_ENV !== "production") {
-  console.log("🌐 Allowed CORS origins:", allowedOrigins);
-}
 
 connectDB();
 connectCloudinary();

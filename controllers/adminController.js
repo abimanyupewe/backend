@@ -3,6 +3,9 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
 import adminModel from "../models/adminModel.js";
+import userModel from "../models/userModels.js";
+import sellerModel from "../models/sellerModel.js";
+import mentorModel from "../models/mentorModel.js";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
@@ -190,7 +193,25 @@ const getAdmin = async (req, res) => {
   }
 };
 
-// token yang dihasilkan admin, untuk credential saat mau add, remove, update product. jika ingin melakukan testing tambahkan header Authorization dengan nama <token>
+const getCountsUserSellerMentor = async (req, res) => {
+  try {
+    const [userCount, sellerCount, mentorCount] = await Promise.all([
+      userModel.countDocuments(),
+      sellerModel.countDocuments(),
+      mentorModel.countDocuments(),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        totalUser: userCount,
+        totalSeller: sellerCount,
+        totalMentor: mentorCount,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 export {
   adminLogin,
@@ -199,4 +220,5 @@ export {
   disableAdmin,
   deleteAdmin,
   getAdmin,
+  getCountsUserSellerMentor,
 };

@@ -224,14 +224,26 @@ const getGrowthRateUserSellerMentor = async (req, res) => {
     prevWeekStart.setDate(lastWeek.getDate() - 7);
 
     // Jumlah user/seller/mentor minggu ini
-    const userThisWeek = await userModel.countDocuments({ createdAt: { $gte: lastWeek, $lte: now } });
-    const sellerThisWeek = await sellerModel.countDocuments({ createdAt: { $gte: lastWeek, $lte: now } });
-    const mentorThisWeek = await mentorModel.countDocuments({ createdAt: { $gte: lastWeek, $lte: now } });
+    const userThisWeek = await userModel.countDocuments({
+      createdAt: { $gte: lastWeek, $lte: now },
+    });
+    const sellerThisWeek = await sellerModel.countDocuments({
+      createdAt: { $gte: lastWeek, $lte: now },
+    });
+    const mentorThisWeek = await mentorModel.countDocuments({
+      createdAt: { $gte: lastWeek, $lte: now },
+    });
 
     // Jumlah user/seller/mentor minggu lalu
-    const userLastWeek = await userModel.countDocuments({ createdAt: { $gte: prevWeekStart, $lt: lastWeek } });
-    const sellerLastWeek = await sellerModel.countDocuments({ createdAt: { $gte: prevWeekStart, $lt: lastWeek } });
-    const mentorLastWeek = await mentorModel.countDocuments({ createdAt: { $gte: prevWeekStart, $lt: lastWeek } });
+    const userLastWeek = await userModel.countDocuments({
+      createdAt: { $gte: prevWeekStart, $lt: lastWeek },
+    });
+    const sellerLastWeek = await sellerModel.countDocuments({
+      createdAt: { $gte: prevWeekStart, $lt: lastWeek },
+    });
+    const mentorLastWeek = await mentorModel.countDocuments({
+      createdAt: { $gte: prevWeekStart, $lt: lastWeek },
+    });
 
     // Hitung growth rate (jika minggu lalu 0, growth dianggap 100% jika ada penambahan)
     const calcGrowth = (nowCount, prevCount) => {
@@ -258,6 +270,74 @@ const getGrowthRateUserSellerMentor = async (req, res) => {
   }
 };
 
+// Helper untuk generate array tanggal
+function getLastNDays(n) {
+  const days = [];
+  const today = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    days.push(d.toISOString().slice(0, 10)); // format: YYYY-MM-DD
+  }
+  return days;
+}
+
+const getDailyCountsUserSellerMentor = async (req, res) => {
+  try {
+    // Ambil period dari query, default 7 (minggu)
+    const { period } = req.query;
+    let daysCount = 7;
+    if (period === "day") daysCount = 1;
+    else if (period === "week") daysCount = 7;
+    else if (period === "month") daysCount = 30;
+
+    const days = getLastNDays(daysCount);
+
+    // Fungsi agregasi untuk model
+    const getDailyCounts = async (model) => {
+      const result = await model.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(days[0] + "T00:00:00.000Z"),
+              $lte: new Date(days[days.length - 1] + "T23:59:59.999Z"),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      // Mapping hasil ke array sesuai urutan hari
+      const map = {};
+      result.forEach((r) => (map[r._id] = r.count));
+      return days.map((d) => map[d] || 0);
+    };
+
+    const [userDaily, sellerDaily, mentorDaily] = await Promise.all([
+      getDailyCounts(userModel),
+      getDailyCounts(sellerModel),
+      getDailyCounts(mentorModel),
+    ]);
+
+    res.json({
+      success: true,
+      period: period || "week",
+      days,
+      userDaily,
+      sellerDaily,
+      mentorDaily,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   adminLogin,
   inviteAdmin,
@@ -267,4 +347,5 @@ export {
   getAdmin,
   getCountsUserSellerMentor,
   getGrowthRateUserSellerMentor,
+  getDailyCountsUserSellerMentor,
 };

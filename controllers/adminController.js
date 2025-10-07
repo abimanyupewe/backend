@@ -213,6 +213,51 @@ const getCountsUserSellerMentor = async (req, res) => {
   }
 };
 
+const getGrowthRateUserSellerMentor = async (req, res) => {
+  try {
+    // Periode: 7 hari terakhir
+    const now = new Date();
+    const lastWeek = new Date(now);
+    lastWeek.setDate(now.getDate() - 7);
+
+    const prevWeekStart = new Date(lastWeek);
+    prevWeekStart.setDate(lastWeek.getDate() - 7);
+
+    // Jumlah user/seller/mentor minggu ini
+    const userThisWeek = await userModel.countDocuments({ createdAt: { $gte: lastWeek, $lte: now } });
+    const sellerThisWeek = await sellerModel.countDocuments({ createdAt: { $gte: lastWeek, $lte: now } });
+    const mentorThisWeek = await mentorModel.countDocuments({ createdAt: { $gte: lastWeek, $lte: now } });
+
+    // Jumlah user/seller/mentor minggu lalu
+    const userLastWeek = await userModel.countDocuments({ createdAt: { $gte: prevWeekStart, $lt: lastWeek } });
+    const sellerLastWeek = await sellerModel.countDocuments({ createdAt: { $gte: prevWeekStart, $lt: lastWeek } });
+    const mentorLastWeek = await mentorModel.countDocuments({ createdAt: { $gte: prevWeekStart, $lt: lastWeek } });
+
+    // Hitung growth rate (jika minggu lalu 0, growth dianggap 100% jika ada penambahan)
+    const calcGrowth = (nowCount, prevCount) => {
+      if (prevCount === 0) return nowCount > 0 ? 100 : 0;
+      return ((nowCount - prevCount) / prevCount) * 100;
+    };
+
+    res.json({
+      success: true,
+      data: {
+        growthRateUser: calcGrowth(userThisWeek, userLastWeek),
+        growthRateSeller: calcGrowth(sellerThisWeek, sellerLastWeek),
+        growthRateMentor: calcGrowth(mentorThisWeek, mentorLastWeek),
+        userThisWeek,
+        userLastWeek,
+        sellerThisWeek,
+        sellerLastWeek,
+        mentorThisWeek,
+        mentorLastWeek,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   adminLogin,
   inviteAdmin,
@@ -221,4 +266,5 @@ export {
   deleteAdmin,
   getAdmin,
   getCountsUserSellerMentor,
+  getGrowthRateUserSellerMentor,
 };

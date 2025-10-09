@@ -9,6 +9,7 @@ import {
   getCountsUserSellerMentor,
   getGrowthRateUserSellerMentor,
   getDailyCountsUserSellerMentor,
+  getAllUserSellerMentor,
 } from "../controllers/adminController.js";
 import superAdminAuth from "../middleware/superAdmin.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -26,5 +27,6 @@ adminRouter.get("/get/:adminId", adminAuth, roleAuth("superadmin"), getAdmin);
 adminRouter.get("/summary", superAdminAuth, getCountsUserSellerMentor);
 adminRouter.get("/growth-rate", superAdminAuth, getGrowthRateUserSellerMentor);
 adminRouter.get("/daily-counts", superAdminAuth, getDailyCountsUserSellerMentor);
+adminRouter.get("/all", superAdminAuth, getAllUserSellerMentor);
 
 export default adminRouter;

@@ -338,6 +338,24 @@ const getDailyCountsUserSellerMentor = async (req, res) => {
   }
 };
 
+const getAllUserSellerMentor = async (req, res) => {
+  try {
+    const [users, sellers, mentors] = await Promise.all([
+      userModel.find(),
+      sellerModel.find(),
+      mentorModel.find(),
+    ]);
+    res.json({
+      success: true,
+      users,
+      sellers,
+      mentors,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   adminLogin,
   inviteAdmin,
@@ -348,4 +366,5 @@ export {
   getCountsUserSellerMentor,
   getGrowthRateUserSellerMentor,
   getDailyCountsUserSellerMentor,
+  getAllUserSellerMentor,
 };

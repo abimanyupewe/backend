@@ -193,6 +193,15 @@ const getAdmin = async (req, res) => {
   }
 };
 
+const getAllAdmin = async (req, res) => {
+  try {
+    const admins = await adminModel.find({ role: { $ne: "superadmin" } });
+    res.json({ success: true, data: admins });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getCountsUserSellerMentor = async (req, res) => {
   try {
     const [userCount, sellerCount, mentorCount] = await Promise.all([
@@ -367,4 +376,5 @@ export {
   getGrowthRateUserSellerMentor,
   getDailyCountsUserSellerMentor,
   getAllUserSellerMentor,
+  getAllAdmin,
 };

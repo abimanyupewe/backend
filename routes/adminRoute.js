@@ -10,6 +10,7 @@ import {
   getGrowthRateUserSellerMentor,
   getDailyCountsUserSellerMentor,
   getAllUserSellerMentor,
+  getAllAdmin,
 } from "../controllers/adminController.js";
 import superAdminAuth from "../middleware/superAdmin.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -26,7 +27,12 @@ adminRouter.delete("/delete", adminAuth, roleAuth("superadmin"), deleteAdmin);
 adminRouter.get("/get/:adminId", adminAuth, roleAuth("superadmin"), getAdmin);
 adminRouter.get("/summary", superAdminAuth, getCountsUserSellerMentor);
 adminRouter.get("/growth-rate", superAdminAuth, getGrowthRateUserSellerMentor);
-adminRouter.get("/daily-counts", superAdminAuth, getDailyCountsUserSellerMentor);
+adminRouter.get(
+  "/daily-counts",
+  superAdminAuth,
+  getDailyCountsUserSellerMentor
+);
 adminRouter.get("/all-user", superAdminAuth, getAllUserSellerMentor);
+adminRouter.get("/all-admin", adminAuth, roleAuth("superadmin"), getAllAdmin);
 
 export default adminRouter;

@@ -11,6 +11,7 @@ import {
   getDailyCountsUserSellerMentor,
   getAllUserSellerMentor,
   getAllAdmin,
+  activedAdmin,
 } from "../controllers/adminController.js";
 import superAdminAuth from "../middleware/superAdmin.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -34,5 +35,6 @@ adminRouter.get(
 );
 adminRouter.get("/all-user", superAdminAuth, getAllUserSellerMentor);
 adminRouter.get("/all-admin", adminAuth, roleAuth("superadmin"), getAllAdmin);
+adminRouter.post("/activated", adminAuth, roleAuth("superadmin"), activedAdmin);
 
 export default adminRouter;

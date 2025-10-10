@@ -151,6 +151,34 @@ const disableAdmin = async (req, res) => {
   }
 };
 
+const activedAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.body;
+    if (!adminId)
+      return res
+        .status(400)
+        .json({ success: false, message: "adminId is required" });
+
+    const admin = await adminModel.findById(adminId);
+    if (!admin)
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
+
+    if (admin.status !== "disabled")
+      return res
+        .status(400)
+        .json({ success: false, message: "Admin is not disabled" });
+
+    admin.status = "active";
+    await admin.save();
+
+    res.json({ success: true, message: "Admin activated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Delete admin
 const deleteAdmin = async (req, res) => {
   try {
@@ -377,4 +405,5 @@ export {
   getDailyCountsUserSellerMentor,
   getAllUserSellerMentor,
   getAllAdmin,
+  activedAdmin,
 };

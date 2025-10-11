@@ -22,9 +22,14 @@ const adminSchema = new mongoose.Schema(
       enum: ["superadmin", "admin", "support", "contentmanager"],
       default: "admin",
     },
+    isVerifed: { type: Boolean, default: false },
     otp: { type: String },
     otpExpired: { type: Date },
-    status: { type: String, enum: ["pending", "active", "disabled"], default: "pending" },
+    status: {
+      type: String,
+      enum: ["pending", "active", "disabled"],
+      default: "pending",
+    },
     createdAt: {
       type: Date,
       default: Date.now,

@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import validator from "validator";
 import bcrypt from "bcrypt";
-import { sendOTPCode } from "../middleware/Email.js";
+// import { sendOTPCode } from "../middleware/Email.js";
+import { sendOTPCode } from "../middleware/SendGrid.js";
 import adminModel from "../models/adminModel.js";
 import userModel from "../models/userModels.js";
 import sellerModel from "../models/sellerModel.js";
@@ -81,12 +82,14 @@ const inviteAdmin = async (req, res) => {
       email,
       role,
       otp,
+      isVerifed: false,
       otpExpired,
       status: "pending",
     });
 
     // Kirim OTP ke email (implementasikan sendEmail sesuai kebutuhan)
-    sendOTPCode(email, otp);
+    // sendOTPCode(email, otp); ini menggunakan nodemailer
+    sendOTPCode(email, otp); // ini menggunakan sendgrid
 
     res.json({ success: true, message: "OTP sent to email" });
   } catch (error) {
@@ -112,7 +115,7 @@ const registerInvitedAdmin = async (req, res) => {
     // Update admin data
     admin.name = name;
     admin.password = hashedPassword;
-    admin.status = "active";
+    (admin.isVerifed = true), (admin.status = "active");
     admin.otp = undefined;
     admin.otpExpired = undefined;
     await admin.save();

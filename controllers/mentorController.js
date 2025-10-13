@@ -114,7 +114,7 @@ const registerMentor = async (req, res) => {
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+    const otpExpired = Date.now() + 1 * 60 * 1000; // 1 menit
 
     // Simpan mentor baru ke database
     const mentor = new mentorModel({

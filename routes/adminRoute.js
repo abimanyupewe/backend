@@ -32,6 +32,12 @@ adminRouter.get("/get/:adminId", adminAuth, roleAuth("superadmin"), getAdmin);
 adminRouter.get("/summary", superAdminAuth, getCountsUserSellerMentor);
 adminRouter.get("/growth-rate", superAdminAuth, getGrowthRateUserSellerMentor);
 adminRouter.get(
+  "/all-user-seller-mentor",
+  superAdminAuth,
+  roleAuth("superadmin"),
+  getAllUserSellerMentor
+);
+adminRouter.get(
   "/daily-counts",
   superAdminAuth,
   getDailyCountsUserSellerMentor

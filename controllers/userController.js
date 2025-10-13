@@ -107,7 +107,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit dari sekarang
+    const otpExpired = Date.now() + 1 * 60 * 1000; // 1 menit dari sekarang
 
     // Buat user baru
     const newUser = new userModel({

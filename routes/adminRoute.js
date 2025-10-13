@@ -12,6 +12,9 @@ import {
   getAllUserSellerMentor,
   getAllAdmin,
   activedAdmin,
+  getAllUser,
+  getAllSeller,
+  getAllMentor,
 } from "../controllers/adminController.js";
 import superAdminAuth from "../middleware/superAdmin.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -33,8 +36,25 @@ adminRouter.get(
   superAdminAuth,
   getDailyCountsUserSellerMentor
 );
-adminRouter.get("/all-user", superAdminAuth, getAllUserSellerMentor);
 adminRouter.get("/all-admin", adminAuth, roleAuth("superadmin"), getAllAdmin);
 adminRouter.post("/actived", adminAuth, roleAuth("superadmin"), activedAdmin);
+adminRouter.get(
+  "/all-user",
+  superAdminAuth,
+  roleAuth("superadmin"),
+  getAllUser
+);
+adminRouter.get(
+  "/all-seller",
+  superAdminAuth,
+  roleAuth("superadmin"),
+  getAllSeller
+);
+adminRouter.get(
+  "/all-mentor",
+  superAdminAuth,
+  roleAuth("superadmin"),
+  getAllMentor
+);
 
 export default adminRouter;

@@ -404,6 +404,42 @@ const getAllUserSellerMentor = async (req, res) => {
   }
 };
 
+const getAllUser = async (req, res) => {
+  try {
+    const users = await userModel.find();
+    res.json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getAllSeller = async (req, res) => {
+  try {
+    const sellers = await sellerModel.find();
+    res.json({
+      success: true,
+      sellers,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getAllMentor = async (req, res) => {
+  try {
+    const mentors = await mentorModel.find();
+    res.json({
+      success: true,
+      mentors,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   adminLogin,
   inviteAdmin,
@@ -417,4 +453,7 @@ export {
   getAllUserSellerMentor,
   getAllAdmin,
   activedAdmin,
+  getAllUser,
+  getAllSeller,
+  getAllMentor,
 };

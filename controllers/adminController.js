@@ -101,6 +101,14 @@ const registerInvitedAdmin = async (req, res) => {
   try {
     const { otp, name, password } = req.body;
 
+    // Validasi minimal 8 karakter
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
     // Cari admin berdasarkan OTP dan status pending
     const admin = await adminModel.findOne({ otp, status: "pending" });
 

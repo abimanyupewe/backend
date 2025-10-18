@@ -9,7 +9,7 @@ import sellerModel from "../models/sellerModel.js";
 import mentorModel from "../models/mentorModel.js";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET);
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 // route for admin login

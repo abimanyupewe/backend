@@ -6,7 +6,7 @@ import { sendOTPCode } from "../middleware/Email.js";
 import jwt from "jsonwebtoken";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET);
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 const loginSeller = async (req, res) => {

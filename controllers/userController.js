@@ -6,7 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { sendOTPCode } from "../middleware/Email.js";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET);
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 const loginUser = async (req, res) => {

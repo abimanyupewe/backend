@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
 import jwt from "jsonwebtoken";
 
-const createToken = (id) => {
+const createToken = (seller) => {
   return jwt.sign(
     {
       id: seller._id,
@@ -46,7 +46,7 @@ const loginSeller = async (req, res) => {
     const isMatch = await bcrypt.compare(password, seller.password);
 
     if (isMatch) {
-      const token = createToken(seller._id);
+      const token = createToken(seller);
       res.json({ success: true, message: "Login successful", token });
     } else {
       res.json({ success: false, message: "Invalid credentials" });

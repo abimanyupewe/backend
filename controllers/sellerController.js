@@ -6,7 +6,16 @@ import { sendOTPCode } from "../middleware/Email.js";
 import jwt from "jsonwebtoken";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(
+    {
+      id: seller._id,
+      shopName: seller.shopName,
+      email: seller.email,
+      role: "seller",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 };
 
 const loginSeller = async (req, res) => {
@@ -278,15 +287,15 @@ const verifySellerOTP = async (req, res) => {
     seller.otpExpired = undefined;
     await seller.save();
 
-    res.json({ 
-      success: true, 
-      message: "Seller email verified successfully", 
+    res.json({
+      success: true,
+      message: "Seller email verified successfully",
       seller: {
         id: seller._id,
         shopName: seller.shopName,
         email: seller.email,
-        isVerifed: seller.isVerifed
-      }
+        isVerifed: seller.isVerifed,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -329,11 +338,11 @@ const rateSeller = async (req, res) => {
       existing.updatedAt = new Date();
     } else {
       // Tambah rating baru
-      seller.ratings.push({ 
-        user: userId, 
-        value, 
+      seller.ratings.push({
+        user: userId,
+        value,
         comment: comment || "",
-        createdAt: new Date()
+        createdAt: new Date(),
       });
     }
 

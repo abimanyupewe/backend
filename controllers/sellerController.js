@@ -10,6 +10,7 @@ const createToken = (seller) => {
     {
       id: seller._id,
       shopName: seller.shopName,
+      name: seller.name,
       email: seller.email,
       role: "seller",
     },

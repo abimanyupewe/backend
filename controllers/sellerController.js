@@ -4,6 +4,7 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
 import jwt from "jsonwebtoken";
+import productModel from "../models/productModel.js";
 
 const createToken = (seller) => {
   return jwt.sign(
@@ -107,7 +108,7 @@ const registerSeller = async (req, res) => {
         message: "Password must contain at least one uppercase letter",
       });
     }
-    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(password)) {
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       return res.json({
         success: false,
         message: "Password must contain at least one special character",
@@ -414,6 +415,149 @@ const resendSellerOTP = async (req, res) => {
   }
 };
 
+const getAllProducts = async (req, res) => {
+  try {
+    const sellerId = req.sellerId;
+    if (!sellerId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not Authorized" });
+    }
+    const products = await productModel.find({ seller: sellerId });
+    res.json({ success: true, products });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getSingleProduct = async (req, res) => {
+  try {
+    const sellerId = req.sellerId;
+    if (!sellerId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not Authorized" });
+    }
+    const { productId } = req.body;
+    const product = await productModel.findOne({
+      _id: productId,
+      seller: sellerId,
+    });
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+    res.json({ success: true, product });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const deleteSingleProduct = async (req, res) => {
+  try {
+    const sellerId = req.sellerId;
+    if (!sellerId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not Authorized" });
+    }
+    const { productId } = req.body;
+    const product = await productModel.findOne({
+      _id: productId,
+      seller: sellerId,
+    });
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+    await productModel.deleteOne({ _id: productId, seller: sellerId });
+
+    // Kurangi productCount pada seller
+    await sellerModel.findByIdAndUpdate(sellerId, {
+      $inc: { productCount: -1 },
+    });
+    res.json({ success: true, message: "Product deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateSingleProduct = async (req, res) => {
+  try {
+    const sellerId = req.sellerId;
+    const { productId, name, description, price, category, stock, bestseller } =
+      req.body;
+
+    if (!sellerId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not Authorized" });
+    }
+
+    const product = await productModel.findOne({
+      _id: productId,
+      seller: sellerId,
+    });
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    // Ambil file gambar jika ada
+    const image1 = req.files?.image1?.[0];
+    const image2 = req.files?.image2?.[0];
+    const image3 = req.files?.image3?.[0];
+    const image4 = req.files?.image4?.[0];
+    const images = [image1, image2, image3, image4].filter(
+      (item) => item !== undefined
+    );
+
+    let imageUrl = product.image; // default: gambar lama
+
+    // Jika ada gambar baru, upload ke Cloudinary
+    if (images.length > 0) {
+      imageUrl = await Promise.all(
+        images.map(async (item) => {
+          let result = await cloudinary.uploader.upload(item.path, {
+            resource_type: "image",
+          });
+          return result.secure_url;
+        })
+      );
+    }
+
+    // Siapkan data update
+    const updateData = {
+      name: name || product.name,
+      description: description || product.description,
+      price: price ? Number(price) : product.price,
+      category: category || product.category,
+      stock: stock ? Number(stock) : product.stock,
+      image: imageUrl,
+      bestSeller:
+        bestseller !== undefined ? bestseller === "true" : product.bestSeller,
+      updatedAt: new Date(),
+    };
+
+    // Update data di database
+    const updatedProduct = await productModel.findByIdAndUpdate(
+      productId,
+      updateData,
+      { new: true }
+    );
+    res.json({
+      success: true,
+      message: "Product updated successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   registerSeller,
   loginSeller,
@@ -424,4 +568,8 @@ export {
   verifySellerOTP,
   rateSeller,
   resendSellerOTP,
+  getAllProducts,
+  getSingleProduct,
+  deleteSingleProduct,
+  updateSingleProduct,
 };

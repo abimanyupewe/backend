@@ -16,7 +16,7 @@ const productRouter = express.Router();
 // route for product
 productRouter.post(
   "/add",
-  adminAuth, sellerAuth,
+  sellerAuth,
   upload.fields([
     { name: "image1", maxCount: 1 },
     { name: "image2", maxCount: 1 },
@@ -27,7 +27,7 @@ productRouter.post(
 );
 productRouter.put(
   "/update",
-  adminAuth, sellerAuth,
+  sellerAuth,
   upload.fields([
     { name: "image1", maxCount: 1 },
     { name: "image2", maxCount: 1 },
@@ -36,7 +36,7 @@ productRouter.put(
   ]),
   updateProduct
 );
-productRouter.delete("/remove", adminAuth, sellerAuth, removeProduct);
+productRouter.delete("/remove", removeProduct);
 productRouter.get("/list", listProducts);
 productRouter.get("/single", singleProduct);
 productRouter.get("/seller/:seller", getProductsSeller);

@@ -56,6 +56,15 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  voucher: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "voucher",
+    default: null,
+  },
+  preOrder: {
+    type: Boolean,
+    default: false,
+  },
   image: {
     type: Array,
     required: true,

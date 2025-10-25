@@ -41,15 +41,25 @@ const voucherSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "seller",
-    required: false, // jika voucher khusus seller tertentu
-  },
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "product",
     required: false, // jika voucher khusus produk tertentu
+  },
+  course: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "course",
+    required: false, // jika voucher khusus course tertentu
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    refPath: "role", // dinamis: ref ke model sesuai role
+  },
+  role: {
+    type: String,
+    enum: ["admin", "seller", "mentor"],
+    required: true,
   },
   isActive: {
     type: Boolean,
@@ -61,6 +71,7 @@ const voucherSchema = new mongoose.Schema({
   },
 });
 
-const voucherModel = mongoose.models.voucher || mongoose.model("voucher", voucherSchema);
+const voucherModel =
+  mongoose.models.voucher || mongoose.model("voucher", voucherSchema);
 
 export default voucherModel;

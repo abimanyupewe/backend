@@ -4,7 +4,7 @@ import sellerModel from "../models/sellerModel.js";
 
 const addProduct = async (req, res) => {
   try {
-    const { name, description, price, category, stock, bestseller, seller } =
+    const { name, description, price, category, stock, bestseller, preOrder, seller, voucher } =
       req.body;
 
     const image1 = req.files?.image1?.[0];
@@ -46,6 +46,8 @@ const addProduct = async (req, res) => {
       price: Number(price),
       category,
       stock: Number(stock),
+      preOrder: preOrder === "true" ? true : false,
+      voucher: voucher ? voucher : null,
       rating: 0, // default rating
       bestSeller: bestseller === "true" ? true : false,
       image: imageUrl,

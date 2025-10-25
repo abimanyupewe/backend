@@ -11,6 +11,8 @@ import {
   getSingleProduct,
   deleteSingleProduct,
   updateSingleProduct,
+  disableProduct,
+  enableProduct,
 } from "../controllers/sellerController.js";
 import upload from "../middleware/multer.js";
 import sellerAuth from "../middleware/sellerAuth.js";
@@ -42,5 +44,7 @@ sellerRouter.put(
   ]),
   updateSingleProduct
 );
+sellerRouter.put("/disable-product", sellerAuth, disableProduct);
+sellerRouter.put("/enable-product", sellerAuth, enableProduct);
 
 export default sellerRouter;

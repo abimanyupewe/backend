@@ -69,6 +69,11 @@ const productSchema = new mongoose.Schema({
     type: Array,
     required: true,
   },
+  status: {
+    type: String,
+    enum: ["active", "disabled"],
+    default: "active",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

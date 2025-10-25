@@ -558,6 +558,76 @@ const updateSingleProduct = async (req, res) => {
   }
 };
 
+const disableProduct = async (req, res) => {
+  try {
+    const sellerId = req.sellerId;
+    const { productId } = req.body;
+
+    if (!sellerId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not Authorized" });
+    }
+
+    const product = await productModel.findOne({
+      _id: productId,
+      seller: sellerId,
+    });
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    // Disable the product
+    product.status = "disabled";
+    await product.save();
+
+    res.json({
+      success: true,
+      message: "Product disabled successfully",
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const enableProduct = async (req, res) => {
+  try {
+    const sellerId = req.sellerId;
+    const { productId } = req.body;
+
+    if (!sellerId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not Authorized" });
+    }
+
+    const product = await productModel.findOne({
+      _id: productId,
+      seller: sellerId,
+    });
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    // Enable the product
+    product.status = "active";
+    await product.save();
+
+    res.json({
+      success: true,
+      message: "Product enabled successfully",
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   registerSeller,
   loginSeller,
@@ -572,4 +642,6 @@ export {
   getSingleProduct,
   deleteSingleProduct,
   updateSingleProduct,
+  disableProduct,
+  enableProduct,
 };

@@ -15,6 +15,8 @@ import {
   getAllUser,
   getAllSeller,
   getAllMentor,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/adminController.js";
 import superAdminAuth from "../middleware/superAdmin.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -24,6 +26,8 @@ const adminRouter = express.Router();
 
 // route for admin
 adminRouter.post("/login", adminLogin);
+adminRouter.post("/forgot-password", forgotPassword);
+adminRouter.post("/reset-password", resetPassword);
 adminRouter.post("/invite", adminAuth, roleAuth("superadmin"), inviteAdmin);
 adminRouter.post("/register", registerInvitedAdmin);
 adminRouter.post("/disable", adminAuth, roleAuth("superadmin"), disableAdmin);

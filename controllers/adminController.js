@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import validator from "validator";
 import bcrypt from "bcrypt";
 // import { sendOTPCode } from "../middleware/Email.js";
-import { sendOTPCode } from "../middleware/SendGrid.js";
+import { sendOTPCode, sendResetPasswordEmail } from "../middleware/SendGrid.js";
 import adminModel from "../models/adminModel.js";
 import userModel from "../models/userModels.js";
 import sellerModel from "../models/sellerModel.js";
@@ -440,6 +440,66 @@ const getAllMentor = async (req, res) => {
   }
 };
 
+// Forgot Password
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const admin = await adminModel.findOne({ email });
+    if (!admin) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+
+    admin.otp = otp;
+    admin.otpExpired = otpExpired;
+    await admin.save();
+
+    await sendResetPasswordEmail(email, otp);
+
+    res.json({ success: true, message: "OTP sent to email" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Reset Password
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    const admin = await adminModel.findOne({ email });
+    if (!admin) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    if (admin.otp !== otp || admin.otpExpired < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    admin.password = hashedPassword;
+    admin.otp = undefined;
+    admin.otpExpired = undefined;
+    await admin.save();
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   adminLogin,
   inviteAdmin,
@@ -456,4 +516,6 @@ export {
   getAllUser,
   getAllSeller,
   getAllMentor,
+  forgotPassword,
+  resetPassword,
 };

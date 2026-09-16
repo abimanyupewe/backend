@@ -1,81 +1,86 @@
 # Florera API Backend
 
-This is the backend service for the Florera application. It provides the REST API for the Florera main application, Admin Seller, Admin Mentor, and Admin All-in-One dashboards. The backend is built using Node.js and Express.js, connecting to a MongoDB database.
+Ini adalah layanan backend untuk aplikasi Florera. Proyek ini menyediakan REST API untuk aplikasi utama Florera, Dasbor Admin Penjual, Dasbor Admin Mentor, dan Dasbor Admin Utama (All-in-One). Backend ini dibangun menggunakan Node.js dan Express.js, serta terhubung ke basis data MongoDB.
 
-## Tech Stack
+## Teknologi yang Digunakan
+
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=flat-square&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![JSON Web Tokens](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=JSON%20web%20tokens&logoColor=white)
 
 *   **Runtime:** Node.js
-*   **Framework:** Express.js
-*   **Database:** MongoDB
+*   **Kerangka Kerja (Framework):** Express.js
+*   **Basis Data:** MongoDB
 *   **ODM:** Mongoose
-*   **Authentication:** JSON Web Token (JWT), bcrypt
-*   **Media Storage:** Cloudinary, Multer
-*   **Payment Gateway:** Midtrans Client
-*   **Email Services:** Nodemailer, SendGrid
-*   **Messaging:** WhatsApp Web JS
-*   **Validation:** Validator
+*   **Autentikasi:** JSON Web Token (JWT), bcrypt
+*   **Penyimpanan Media:** Cloudinary, Multer
+*   **Gerbang Pembayaran (Payment Gateway):** Midtrans Client
+*   **Layanan Email:** Nodemailer, SendGrid
+*   **Pesan API:** WhatsApp Web JS
+*   **Validasi Data:** Validator
 
-## Core Features
+## Fitur Utama
 
-*   **Role-Based Access Control:** Separate API routes and authentication layers for Admin, User, Seller, and Mentor.
-*   **Authentication and Authorization:** Secure login and registration using JWT, with OTP verification for account activation.
-*   **Product and Course Management:** Endpoints to handle CRUD operations for products (sellers) and courses (mentors) with image uploads via Cloudinary.
-*   **Cart and Checkout:** Shopping cart functionality and payment processing integrated with Midtrans.
-*   **Automated Cleanup Tasks:** Background process that runs every minute to remove unverified accounts with expired OTPs.
-*   **CORS Configuration:** Dynamic Cross-Origin Resource Sharing settings supporting multiple frontend environments.
+*   **Kontrol Akses Berbasis Peran:** Rute API dan lapisan autentikasi yang terpisah untuk Admin, Pengguna (User), Penjual (Seller), dan Mentor.
+*   **Autentikasi dan Otorisasi:** Sistem masuk (login) dan pendaftaran yang aman menggunakan JWT, disertai dengan verifikasi OTP untuk aktivasi akun.
+*   **Manajemen Produk dan Kursus:** Endpoint untuk menangani operasi CRUD pada produk (untuk penjual) dan kursus (untuk mentor), termasuk unggahan gambar melalui Cloudinary.
+*   **Keranjang Belanja dan Pembayaran:** Fungsionalitas keranjang belanja dan pemrosesan pembayaran yang terintegrasi dengan Midtrans.
+*   **Tugas Pembersihan Otomatis:** Proses latar belakang yang berjalan setiap menit untuk menghapus akun yang tidak terverifikasi setelah OTP kedaluwarsa.
+*   **Konfigurasi CORS:** Pengaturan Cross-Origin Resource Sharing (CORS) dinamis yang mendukung berbagai lingkungan frontend.
 
-## Getting Started
+## Memulai Proyek
 
-Follow these instructions to set up the project on your local machine for development and testing purposes.
+Ikuti petunjuk di bawah ini untuk mengatur proyek di komputer lokal Anda untuk keperluan pengembangan dan pengujian.
 
-### Prerequisites
+### Prasyarat
 
-*   Node.js (v18 or higher recommended)
-*   npm or yarn
-*   MongoDB Cluster/Local instance
-*   Cloudinary Account
-*   Midtrans Account
-*   SendGrid Account (optional, for email delivery)
+*   Node.js (versi 18 atau lebih baru disarankan)
+*   npm atau yarn
+*   Kluster MongoDB atau instans MongoDB lokal
+*   Akun Cloudinary
+*   Akun Midtrans
+*   Akun SendGrid (opsional, untuk pengiriman email)
 
-### Installation
+### Instalasi
 
-1.  Clone the repository and navigate to the backend directory.
-2.  Install the required dependencies:
+1.  Kloning repositori dan masuk ke direktori backend.
+2.  Instal dependensi yang dibutuhkan:
     ```bash
     npm install
     ```
-3.  Create a copy of `.env.example` and rename it to `.env`.
-4.  Fill in the environment variables in `.env` with your actual credentials:
+3.  Buat salinan file `.env.example` dan ubah namanya menjadi `.env`.
+4.  Isi variabel lingkungan di dalam `.env` dengan kredensial asli Anda:
     ```bash
     cp .env.example .env
     ```
 
-### Running the Application
+### Menjalankan Aplikasi
 
-To start the server in development mode using nodemon (auto-reloads on changes):
+Untuk menjalankan server dalam mode pengembangan menggunakan nodemon (otomatis memuat ulang jika ada perubahan kode):
 
 ```bash
 npm run server
 ```
 
-To start the server in production mode:
+Untuk menjalankan server dalam mode produksi:
 
 ```bash
 npm start
 ```
 
-The server will start on the port specified in your `.env` file (default is 4000).
+Server akan berjalan pada porta (port) yang telah ditentukan di dalam file `.env` (nilai bawaan adalah 4000).
 
-## Project Structure
+## Struktur Proyek
 
-*   `config/`: Configuration files for database connections (MongoDB, Cloudinary).
-*   `controllers/`: Request handlers containing the business logic for each route.
-*   `middleware/`: Custom Express middlewares for authentication, authorization, and file uploads.
-*   `models/`: Mongoose schema definitions for the database collections.
-*   `routes/`: API endpoint definitions mapped to their respective controllers.
-*   `templates/`: Contains templates used within the application (e.g., email templates).
-*   `server.js`: The main entry point of the application.
+*   `config/`: File konfigurasi untuk koneksi eksternal (MongoDB, Cloudinary).
+*   `controllers/`: Pengendali permintaan yang berisi logika bisnis utama untuk setiap rute.
+*   `middleware/`: Middleware Express khusus untuk autentikasi, otorisasi, dan pengunggahan file.
+*   `models/`: Definisi skema Mongoose untuk koleksi di basis data.
+*   `routes/`: Definisi titik akhir (endpoint) API yang dipetakan ke controllernya masing-masing.
+*   `templates/`: Berisi kerangka template yang digunakan dalam aplikasi (misalnya, template email HTML).
+*   `server.js`: File masuk utama (entry point) untuk aplikasi backend ini.
 
-## API Documentation
+## Dokumentasi API
 
-For API testing, a Postman collection (`postman_collection.json`) is available in the root of this directory. It contains all the endpoints for the Admin, User, Seller, Mentor, Product, Course, Category, Cart, and Payment routes. Import it directly into your Postman application.
+Untuk pengujian API, tersedia file koleksi Postman (`postman_collection.json`) di direktori utama backend ini. File ini berisi semua endpoint untuk rute Admin, User, Seller, Mentor, Product, Course, Category, Cart, dan Payment. Anda dapat langsung mengimpornya ke dalam aplikasi Postman Anda.

@@ -25,6 +25,8 @@ const port = process.env.PORT || 4000;
 const allowedOrigins = [
   "http://localhost:3000", // development
   "http://localhost:3001", // development backup
+  "http://localhost:3002",
+  "http://localhost:3003",
   process.env.FRONTEND_FLORERA?.replace(/\/$/, ""), // Main app
   process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""), // Admin Seller
   process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""), // Admin Mentor

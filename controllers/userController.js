@@ -4,6 +4,7 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import { sendOTPCode } from "../middleware/Email.js";
+import { sendResetPasswordEmail } from "../middleware/SendGrid.js";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -255,4 +256,63 @@ const verOTP = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser, updateUser, deleteUser, verOTP };
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+
+    user.otp = otp;
+    user.otpExpired = otpExpired;
+    await user.save();
+
+    await sendResetPasswordEmail(email, otp);
+
+    res.json({ success: true, message: "OTP sent to email" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    if (user.otp !== otp || user.otpExpired < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    user.otp = undefined;
+    user.otpExpired = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export { loginUser, registerUser, updateUser, deleteUser, verOTP, forgotPassword, resetPassword };

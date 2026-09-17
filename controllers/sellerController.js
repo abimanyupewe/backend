@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
+import { sendResetPasswordEmail } from "../middleware/SendGrid.js";
 import jwt from "jsonwebtoken";
 import productModel from "../models/productModel.js";
 
@@ -628,6 +629,65 @@ const enableProduct = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const seller = await sellerModel.findOne({ email });
+    if (!seller) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+
+    seller.otp = otp;
+    seller.otpExpired = otpExpired;
+    await seller.save();
+
+    await sendResetPasswordEmail(email, otp);
+
+    res.json({ success: true, message: "OTP sent to email" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    const seller = await sellerModel.findOne({ email });
+    if (!seller) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    if (seller.otp !== otp || seller.otpExpired < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    seller.password = hashedPassword;
+    seller.otp = undefined;
+    seller.otpExpired = undefined;
+    await seller.save();
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   registerSeller,
   loginSeller,
@@ -644,4 +704,6 @@ export {
   updateSingleProduct,
   disableProduct,
   enableProduct,
+  forgotPassword,
+  resetPassword,
 };

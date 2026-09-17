@@ -7,6 +7,8 @@ import {
   updateMentor,
   deleteMentor,
   verifyMentorOtp,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/mentorController.js";
 import upload from "../middleware/multer.js";
 
@@ -19,5 +21,7 @@ router.get("/get/:id", getMentor);
 router.put("/update", upload.fields([{ name: "profileImage", maxCount: 1 }, { name: "certificates"}]), updateMentor);
 router.delete("/delete/:id", deleteMentor);
 router.post("/verify-otp", verifyMentorOtp);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

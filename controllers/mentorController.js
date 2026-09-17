@@ -2,6 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { sendOTPCode } from "../middleware/Email.js";
+import { sendResetPasswordEmail } from "../middleware/SendGrid.js";
 import jwt from "jsonwebtoken";
 import mentorModel from "../models/mentorModel.js";
 
@@ -430,6 +431,65 @@ const resendMentorOTP = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const mentor = await mentorModel.findOne({ email });
+    if (!mentor) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpired = Date.now() + 5 * 60 * 1000; // 5 menit
+
+    mentor.otp = otp;
+    mentor.otpExpired = otpExpired;
+    await mentor.save();
+
+    await sendResetPasswordEmail(email, otp);
+
+    res.json({ success: true, message: "OTP sent to email" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    const mentor = await mentorModel.findOne({ email });
+    if (!mentor) {
+      return res.json({ success: false, message: "Email not registered" });
+    }
+
+    if (mentor.otp !== otp || mentor.otpExpired < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    mentor.password = hashedPassword;
+    mentor.otp = undefined;
+    mentor.otpExpired = undefined;
+    await mentor.save();
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   loginMentor,
   registerMentor,
@@ -440,4 +500,6 @@ export {
   verifyMentorOtp,
   approveMentor,
   resendMentorOTP,
+  forgotPassword,
+  resetPassword,
 };

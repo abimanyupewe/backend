@@ -1,5 +1,5 @@
 import express from "express";
-import { deleteUser, loginUser, registerUser, updateUser, verOTP } from "../controllers/userController.js";
+import { deleteUser, loginUser, registerUser, updateUser, verOTP, forgotPassword, resetPassword } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 
 const userRouter = express.Router();
@@ -9,5 +9,7 @@ userRouter.post("/login", loginUser);
 userRouter.put("/update", upload.fields([{ name: "profileImage", maxCount: 1 }]), updateUser);
 userRouter.delete("/delete", deleteUser);
 userRouter.post("/verify-otp", verOTP);
+userRouter.post("/forgot-password", forgotPassword);
+userRouter.post("/reset-password", resetPassword);
 
 export default userRouter;

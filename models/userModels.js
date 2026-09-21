@@ -51,6 +51,10 @@ const userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+    purchasedCourses: {
+      type: Array,
+      default: [],
+    },
     createdAt: {
       type: Date,
       default: Date.now,

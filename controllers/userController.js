@@ -315,4 +315,17 @@ const resetPassword = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser, updateUser, deleteUser, verOTP, forgotPassword, resetPassword };
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.userId || req.body.userId; // get from auth middleware
+    const user = await userModel.findById(userId).select("-password -otp -otpExpired");
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export { loginUser, registerUser, updateUser, deleteUser, verOTP, forgotPassword, resetPassword, getUserProfile };

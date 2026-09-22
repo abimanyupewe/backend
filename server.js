@@ -17,6 +17,7 @@ import categoryRouter from "./routes/categoryRoute.js";
 import midtransRouter from "./routes/midtransRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import agencyRouter from "./routes/agencyRoutes.js";
 
 // app config
 const app = express();
@@ -113,6 +114,7 @@ app.use("/api/category", categoryRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/payment/midtrans", midtransRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/agency", agencyRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -141,8 +143,8 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-  console.log(`🌐 Connected frontends:`);
+  console.log(`Server running on port ${port}`);
+  console.log(`Connected frontends:`);
   console.log(`   - Main App: ${process.env.FRONTEND_FLORERA}`);
   console.log(`   - Admin Seller: ${process.env.FRONTEND_ADMIN_SELLER}`);
   console.log(`   - Admin Mentor: ${process.env.FRONTEND_ADMIN_MENTOR}`);

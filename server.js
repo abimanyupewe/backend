@@ -17,6 +17,7 @@ import categoryRouter from "./routes/categoryRoute.js";
 import midtransRouter from "./routes/midtransRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import agencyRouter from "./routes/agencyRoute.js";
+import orderRouter from "./routes/orderRoute.js";
 
 // app config
 const app = express();
@@ -111,6 +112,7 @@ app.use("/api/category", categoryRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/payment/midtrans", midtransRouter);
 app.use("/api/agency", agencyRouter);
+app.use("/api/order", orderRouter);
 
 app.get("/", (req, res) => {
   res.json({

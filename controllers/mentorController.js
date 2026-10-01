@@ -5,8 +5,18 @@ import { sendOTPCode } from "../middleware/Email.js";
 import jwt from "jsonwebtoken";
 import mentorModel from "../models/mentorModel.js";
 
-const createToken = (id) => {
-  return jwt.sign({ id, role: "mentor" }, process.env.JWT_SECRET, { expiresIn: "7d" });
+const createToken = (mentor) => {
+  const id = mentor._id || mentor.id || mentor;
+  return jwt.sign(
+    {
+      id,
+      email: mentor.email || "",
+      name: mentor.name || "",
+      role: "mentor",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 };
 
 const loginMentor = async (req, res) => {
@@ -39,8 +49,8 @@ const loginMentor = async (req, res) => {
       return res.json({ success: false, message: "Invalid credentials" });
     }
 
-    const token = createToken(mentor._id);
-    res.json({ success: true, message: "Login successful", token, mentor });
+    const token = createToken(mentor);
+    res.json({ success: true, message: "Login successful", token, mentor, role: "mentor" });
   } catch (error) {
     console.error(error);
     res.json({ success: false, message: error.message });

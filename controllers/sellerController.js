@@ -254,9 +254,13 @@ const removeSeller = async (req, res) => {
 // Get single seller
 const singleSeller = async (req, res) => {
   try {
-    const seller = await sellerModel.findById(req.body.id);
+    const id = req.query?.id || req.body?.id || req.params?.id;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Seller ID is required" });
+    }
+    const seller = await sellerModel.findById(id);
     if (!seller) {
-      return res.json({ success: false, message: "Seller not found" });
+      return res.status(404).json({ success: false, message: "Seller not found" });
     }
     res.json({ success: true, seller });
   } catch (error) {

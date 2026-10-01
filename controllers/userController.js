@@ -5,8 +5,18 @@ import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import { sendOTPCode } from "../middleware/Email.js";
 
-const createToken = (id) => {
-  return jwt.sign({ id, role: "user" }, process.env.JWT_SECRET, { expiresIn: "7d" });
+const createToken = (user) => {
+  const id = user._id || user.id || user;
+  return jwt.sign(
+    {
+      id,
+      email: user.email || "",
+      name: user.name || "",
+      role: "user",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 };
 
 const loginUser = async (req, res) => {
@@ -36,8 +46,8 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
-      const token = createToken(user._id);
-      res.json({ success: true, token });
+      const token = createToken(user);
+      res.json({ success: true, token, role: "user" });
     } else {
       res.json({ success: false, message: "Invalid credentials" });
     }

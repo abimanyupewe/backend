@@ -31,7 +31,10 @@ const addToCart = async (req, res) => {
 
 const getCart = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user?.id || req.body?.userId || req.params?.userId || req.query?.userId;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User ID required" });
+    }
     const user = await userModel.findById(userId);
     if (!user) {
       return res

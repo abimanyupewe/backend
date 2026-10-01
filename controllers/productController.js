@@ -181,14 +181,30 @@ const removeProduct = async (req, res) => {
 
 const singleProduct = async (req, res) => {
   try {
-    const { productId } = req.body;
+    const productId =
+      req.query?.productId ||
+      req.query?.id ||
+      req.body?.productId ||
+      req.body?.id;
+
+    if (!productId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Product ID is required" });
+    }
+
     const product = await productModel.findById(productId);
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
 
     res.json({ success: true, product });
   } catch (error) {
     console.log(error);
 
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

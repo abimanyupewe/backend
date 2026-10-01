@@ -73,7 +73,12 @@ const getAllCourses = async (req, res) => {
 
 const getCourse = async (req, res) => {
   try {
-    const { id } = req.body;
+    const id = req.query?.id || req.body?.id || req.params?.id;
+    if (!id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Course ID is required" });
+    }
 
     const course = await courseModel.findById(id);
     if (!course) {

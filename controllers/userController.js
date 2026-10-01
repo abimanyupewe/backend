@@ -255,4 +255,20 @@ const verOTP = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser, updateUser, deleteUser, verOTP };
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.body.userId || req.headers.userid || req.query.id;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+    const user = await userModel.findById(userId).select("-password -otp -otpExpired");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export { loginUser, registerUser, updateUser, deleteUser, verOTP, getUserProfile };

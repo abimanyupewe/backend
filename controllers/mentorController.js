@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import mentorModel from "../models/mentorModel.js";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ id, role: "mentor" }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 const loginMentor = async (req, res) => {

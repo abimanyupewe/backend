@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "seed": "node seeders/seed.js",
+    "seed:fresh": "node seeders/seed.js --fresh",
+    "seed:agency": "node seeders/seedAgency.js",
+    "seed:agency:fresh": "node seeders/seedAgency.js --fresh"
   },
   "author": "",
   "license": "ISC",

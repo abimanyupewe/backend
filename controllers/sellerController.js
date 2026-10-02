@@ -239,6 +239,36 @@ const updateSeller = async (req, res) => {
       updateData.qrisImage = result.secure_url;
     }
 
+    // Support paymentMethods array (JSON string or object)
+    if (typeof updateData.paymentMethods === "string") {
+      try {
+        updateData.paymentMethods = JSON.parse(updateData.paymentMethods);
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+
+    if (Array.isArray(updateData.paymentMethods) && updateData.paymentMethods.length > 0) {
+      const primaryBank =
+        updateData.paymentMethods.find((m) => m.type === "bank" && m.isActive && m.isPrimary) ||
+        updateData.paymentMethods.find((m) => m.type === "bank" && m.isActive) ||
+        updateData.paymentMethods.find((m) => m.type === "bank");
+
+      if (primaryBank) {
+        updateData.bankName = primaryBank.bankName || updateData.bankName;
+        updateData.bankAccountNumber = primaryBank.accountNumber || updateData.bankAccountNumber;
+        updateData.bankAccountName = primaryBank.accountName || updateData.bankAccountName;
+      }
+
+      const activeQris =
+        updateData.paymentMethods.find((m) => m.type === "qris" && m.isActive) ||
+        updateData.paymentMethods.find((m) => m.type === "qris");
+
+      if (activeQris && activeQris.qrisImage) {
+        updateData.qrisImage = activeQris.qrisImage;
+      }
+    }
+
     const seller = await sellerModel.findByIdAndUpdate(targetId, updateData, {
       new: true,
     });

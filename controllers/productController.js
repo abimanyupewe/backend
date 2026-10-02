@@ -4,8 +4,13 @@ import sellerModel from "../models/sellerModel.js";
 
 const addProduct = async (req, res) => {
   try {
-    const { name, description, price, category, stock, bestseller, preOrder, seller, voucher } =
+    const { name, description, price, discountPrice, category, stock, bestseller, preOrder, seller, voucher, status } =
       req.body;
+
+    const targetSeller = seller || req.sellerId;
+    if (!targetSeller) {
+      return res.status(401).json({ success: false, message: "Seller ID is required" });
+    }
 
     const image1 = req.files?.image1?.[0];
     const image2 = req.files?.image2?.[0];
@@ -23,7 +28,7 @@ const addProduct = async (req, res) => {
     if (images.length === 0) {
       return res
         .status(400)
-        .json({ success: false, message: "No image files uploaded." });
+        .json({ success: false, message: "Minimal 1 gambar produk harus diunggah." });
     }
 
     // Upload gambar ke Cloudinary
@@ -40,16 +45,18 @@ const addProduct = async (req, res) => {
 
     // Buat objek produk untuk MongoDB
     const productData = new productModel({
-      seller,
+      seller: targetSeller,
       name,
       description,
       price: Number(price),
+      discountPrice: discountPrice ? Number(discountPrice) : 0,
       category,
       stock: Number(stock),
-      preOrder: preOrder === "true" ? true : false,
+      preOrder: preOrder === "true" || preOrder === true ? true : false,
       voucher: voucher ? voucher : null,
       rating: 0, // default rating
-      bestSeller: bestseller === "true" ? true : false,
+      bestSeller: bestseller === "true" || bestseller === true ? true : false,
+      status: status || "active",
       image: imageUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -59,7 +66,7 @@ const addProduct = async (req, res) => {
     await productData.save();
 
     // Tambah productCount pada seller
-    await sellerModel.findByIdAndUpdate(seller, {
+    await sellerModel.findByIdAndUpdate(targetSeller, {
       $inc: { productCount: 1 },
     });
 

@@ -79,6 +79,19 @@ const sellerSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    paymentMethods: [
+      {
+        id: { type: String },
+        type: { type: String, enum: ["bank", "qris", "ewallet"], default: "bank" },
+        bankName: { type: String, trim: true, default: "BCA" },
+        accountNumber: { type: String, trim: true, default: "" },
+        accountName: { type: String, trim: true, default: "" },
+        qrisImage: { type: String, default: "" },
+        isPrimary: { type: Boolean, default: false },
+        isActive: { type: Boolean, default: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     createdAt: {
       type: Date,
       default: Date.now,

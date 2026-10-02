@@ -223,6 +223,14 @@ const updateSeller = async (req, res) => {
       }
     }
 
+    // Hash password jika diperbarui
+    if (updateData.password && updateData.password.trim().length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(updateData.password.trim(), salt);
+    } else {
+      delete updateData.password;
+    }
+
     const image = req.files?.profileImage?.[0];
     if (image) {
       const result = await cloudinary.uploader.upload(image.path, {

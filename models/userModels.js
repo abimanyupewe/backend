@@ -27,6 +27,46 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    landmark: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    city: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    district: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    postalCode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    province: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    addresses: [
+      {
+        label: { type: String, default: "Rumah" },
+        recipientName: { type: String, trim: true },
+        phone: { type: String, trim: true },
+        address: { type: String, trim: true },
+        landmark: { type: String, trim: true, default: "" },
+        province: { type: String, trim: true, default: "" },
+        city: { type: String, trim: true, default: "" },
+        district: { type: String, trim: true, default: "" },
+        postalCode: { type: String, trim: true, default: "" },
+        isDefault: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     profileImage: {
       type: String,
       trim: true,

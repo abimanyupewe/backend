@@ -1,5 +1,9 @@
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModels.js";
+import adminModel from "../models/adminModel.js";
+import sellerModel from "../models/sellerModel.js";
+import mentorModel from "../models/mentorModel.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
@@ -168,40 +172,85 @@ const updateUser = async (req, res) => {
     delete updateData._id;
 
     if (!id) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
+      return res.json({ success: false, message: "User ID is required" });
     }
 
-    // Ambil data user lama
-    const oldUser = await userModel.findById(id);
+    let oldUser = null;
+    let modelType = "user";
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      oldUser = await userModel.findById(id);
+      if (!oldUser) {
+        oldUser = await adminModel.findById(id);
+        if (oldUser) modelType = "admin";
+      }
+      if (!oldUser) {
+        oldUser = await sellerModel.findById(id);
+        if (oldUser) modelType = "seller";
+      }
+      if (!oldUser) {
+        oldUser = await mentorModel.findById(id);
+        if (oldUser) modelType = "mentor";
+      }
+    }
+
     if (!oldUser) {
       return res.json({ success: false, message: "User not found" });
     }
 
     // Jika field tidak diisi, isi dengan data lama
     updateData.name = updateData.name || oldUser.name;
-    updateData.email = updateData.email || oldUser.email;
 
-    // Validasi email jika diubah
-    if (updateData.email && updateData.email !== oldUser.email) {
-      if (!validator.isEmail(updateData.email)) {
+    // Guard: Validasi email & password jika email diubah
+    const requestedEmail = updateData.email?.trim().toLowerCase();
+    const currentEmail = oldUser.email?.trim().toLowerCase();
+
+    if (requestedEmail && requestedEmail !== currentEmail) {
+      if (!validator.isEmail(requestedEmail)) {
         return res.json({
           success: false,
-          message: "Please enter a valid email address",
+          message: "Format alamat email tidak valid",
         });
       }
 
-      // Cek duplikasi email baru
+      // Password Guard: Wajib konfirmasi kata sandi
+      const passwordConfirmation = req.body.password || req.body.currentPassword;
+      if (!passwordConfirmation) {
+        return res.json({
+          success: false,
+          message: "Kata sandi akun wajib diisi untuk mengonfirmasi perubahan alamat email",
+        });
+      }
+
+      if (oldUser.password) {
+        const isMatch = await bcrypt.compare(passwordConfirmation, oldUser.password);
+        if (!isMatch) {
+          return res.json({
+            success: false,
+            message: "Kata sandi akun salah. Gagal memperbarui alamat email",
+          });
+        }
+      }
+
+      // Cek duplikasi email baru di database
       const emailExists = await userModel.findOne({
-        email: updateData.email,
+        email: requestedEmail,
         _id: { $ne: id },
       });
       if (emailExists) {
         return res.json({
           success: false,
-          message: "Email already exists",
+          message: "Alamat email sudah digunakan oleh akun lain",
         });
       }
+
+      updateData.email = requestedEmail;
+    } else {
+      updateData.email = oldUser.email;
     }
+
+    // Jangan ubah password lewat updateUser
+    delete updateData.password;
+    delete updateData.currentPassword;
 
     // Ambil file gambar jika ada
     const image = req.files?.profileImage?.[0];
@@ -212,12 +261,25 @@ const updateUser = async (req, res) => {
       updateData.profileImage = result.secure_url;
     }
 
-    const user = await userModel.findByIdAndUpdate(id, updateData, {
-      new: true,
+    let updatedUser = null;
+    if (modelType === "admin") {
+      updatedUser = await adminModel.findByIdAndUpdate(id, updateData, { new: true });
+    } else if (modelType === "seller") {
+      updatedUser = await sellerModel.findByIdAndUpdate(id, updateData, { new: true });
+    } else if (modelType === "mentor") {
+      updatedUser = await mentorModel.findByIdAndUpdate(id, updateData, { new: true });
+    } else {
+      updatedUser = await userModel.findByIdAndUpdate(id, updateData, { new: true });
+    }
+
+    return res.json({
+      success: true,
+      message: "Profil Anda berhasil diperbarui",
+      user: updatedUser,
     });
-    res.json({ success: true, message: "User updated", user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Update user error:", error);
+    return res.json({ success: false, message: error.message });
   }
 };
 
@@ -277,16 +339,121 @@ const getUserProfile = async (req, res) => {
   try {
     const userId = req.body?.userId || req.headers?.userid || req.query?.id || req.userId;
     if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
+      return res.json({ success: false, message: "User ID is required", user: null });
     }
-    const user = await userModel.findById(userId).select("-password -otp -otpExpired");
+
+    let user = null;
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      user = await userModel.findById(userId).select("-password -otp -otpExpired");
+      if (!user) {
+        user = await adminModel.findById(userId).select("-password -otp -otpExpired");
+      }
+      if (!user) {
+        user = await sellerModel.findById(userId).select("-password");
+      }
+      if (!user) {
+        user = await mentorModel.findById(userId).select("-password");
+      }
+    }
+
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.json({ success: false, message: "User not found", user: null });
     }
-    res.json({ success: true, user });
+    return res.json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.json({ success: false, message: error.message, user: null });
   }
 };
 
-export { loginUser, registerUser, updateUser, deleteUser, verOTP, getUserProfile };
+const changePassword = async (req, res) => {
+  try {
+    const rawToken =
+      req.headers.token ||
+      (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : null);
+
+    let userId = req.body.userId || req.body.id;
+    if (rawToken && !userId) {
+      try {
+        const decoded = jwt.verify(rawToken, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch {}
+    }
+
+    if (!userId) {
+      return res.json({ success: false, message: "ID pengguna tidak ditemukan" });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.json({
+        success: false,
+        message: "Password saat ini dan password baru wajib diisi",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.json({
+        success: false,
+        message: "Password baru minimal 8 karakter",
+      });
+    }
+
+    if (confirmPassword && newPassword !== confirmPassword) {
+      return res.json({
+        success: false,
+        message: "Konfirmasi password baru tidak cocok",
+      });
+    }
+
+    let user = null;
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      user = await userModel.findById(userId);
+      if (!user) {
+        user = await adminModel.findById(userId);
+      }
+      if (!user) {
+        user = await sellerModel.findById(userId);
+      }
+      if (!user) {
+        user = await mentorModel.findById(userId);
+      }
+    }
+
+    if (!user) {
+      return res.json({ success: false, message: "Pengguna tidak ditemukan" });
+    }
+
+    if (!user.password) {
+      return res.json({
+        success: false,
+        message: "Akun ini belum memiliki kata sandi terdaftar",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: "Password saat ini tidak sesuai",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Password berhasil diperbarui",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    return res.json({ success: false, message: error.message });
+  }
+};
+
+export { loginUser, registerUser, updateUser, deleteUser, verOTP, getUserProfile, changePassword };
+

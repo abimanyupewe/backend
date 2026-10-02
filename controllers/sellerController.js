@@ -183,8 +183,13 @@ const listSellers = async (req, res) => {
 const updateSeller = async (req, res) => {
   try {
     const { id, ...updateData } = req.body;
+    const targetId = id || req.sellerId || req.body?.id || req.query?.id;
 
-    const dataSeller = await sellerModel.findById(id);
+    if (!targetId) {
+      return res.status(400).json({ success: false, message: "Seller ID is required" });
+    }
+
+    const dataSeller = await sellerModel.findById(targetId);
 
     if (!dataSeller) {
       return res
@@ -208,7 +213,7 @@ const updateSeller = async (req, res) => {
       // Cek duplikasi email baru
       const emailExists = await sellerModel.findOne({
         email: updateData.email,
-        _id: { $ne: id },
+        _id: { $ne: targetId },
       });
       if (emailExists) {
         return res.json({
@@ -226,11 +231,37 @@ const updateSeller = async (req, res) => {
       updateData.profileImage = result.secure_url;
     }
 
-    const seller = await sellerModel.findByIdAndUpdate(id, updateData, {
+    const qris = req.files?.qrisImage?.[0];
+    if (qris) {
+      const result = await cloudinary.uploader.upload(qris.path, {
+        resource_type: "image",
+      });
+      updateData.qrisImage = result.secure_url;
+    }
+
+    const seller = await sellerModel.findByIdAndUpdate(targetId, updateData, {
       new: true,
     });
 
     res.json({ success: true, message: "Seller updated", seller });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get seller profile (for authenticated seller)
+const getSellerProfile = async (req, res) => {
+  try {
+    const id = req.sellerId || req.query?.id || req.body?.id;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Seller ID is required" });
+    }
+    const seller = await sellerModel.findById(id).select("-password");
+    if (!seller) {
+      return res.status(404).json({ success: false, message: "Seller not found" });
+    }
+    res.json({ success: true, seller });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -648,4 +679,5 @@ export {
   updateSingleProduct,
   disableProduct,
   enableProduct,
+  getSellerProfile,
 };

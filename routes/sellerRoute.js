@@ -13,6 +13,7 @@ import {
   updateSingleProduct,
   disableProduct,
   enableProduct,
+  getSellerProfile,
 } from "../controllers/sellerController.js";
 import upload from "../middleware/multer.js";
 import sellerAuth from "../middleware/sellerAuth.js";
@@ -22,9 +23,13 @@ const sellerRouter = express.Router();
 sellerRouter.post("/login", loginSeller);
 sellerRouter.post("/register", registerSeller);
 sellerRouter.get("/list", listSellers);
+sellerRouter.get("/profile", sellerAuth, getSellerProfile);
 sellerRouter.put(
   "/update",
-  upload.fields([{ name: "profileImage", maxCount: 1 }]),
+  upload.fields([
+    { name: "profileImage", maxCount: 1 },
+    { name: "qrisImage", maxCount: 1 },
+  ]),
   updateSeller
 );
 sellerRouter.delete("/remove", removeSeller);

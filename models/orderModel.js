@@ -38,7 +38,23 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      default: "Midtrans",
+      default: "Transfer Bank",
+    },
+    paymentDetails: {
+      type: Object,
+      default: {},
+    },
+    paymentProof: {
+      type: String,
+      default: "",
+    },
+    sellerId: {
+      type: String,
+      default: "",
+    },
+    storeName: {
+      type: String,
+      default: "",
     },
     date: {
       type: Date,

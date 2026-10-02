@@ -4,12 +4,29 @@ import userModel from "../models/userModels.js";
 // Place a new order
 export const placeOrder = async (req, res) => {
   try {
-    const { userId, items, amount, address, paymentMethod } = req.body;
+    const {
+      userId,
+      items,
+      amount,
+      address,
+      paymentMethod,
+      paymentDetails,
+      paymentProof,
+      sellerId,
+      storeName,
+    } = req.body;
 
     if (!userId || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
         message: "User ID and items are required",
+      });
+    }
+
+    if (!paymentProof || typeof paymentProof !== "string" || paymentProof.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Bukti transfer / pembayaran wajib diunggah.",
       });
     }
 
@@ -21,7 +38,11 @@ export const placeOrder = async (req, res) => {
       items,
       amount,
       address: address || {},
-      paymentMethod: paymentMethod || "Midtrans",
+      paymentMethod: paymentMethod || "Transfer Bank",
+      paymentDetails: paymentDetails || {},
+      paymentProof: paymentProof || "",
+      sellerId: sellerId || "",
+      storeName: storeName || "",
       status: "pending",
       date: new Date(),
     });
@@ -150,3 +171,81 @@ export const updateOrderStatus = async (req, res) => {
     });
   }
 };
+
+// Get orders for a specific seller
+export const getSellerOrders = async (req, res) => {
+  try {
+    const sellerId = req.body.sellerId || req.query.sellerId || req.sellerId;
+    if (!sellerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Seller ID is required",
+      });
+    }
+
+    const orders = await orderModel
+      .find({
+        $or: [
+          { sellerId: sellerId },
+          { sellerId: String(sellerId) },
+          { "items.seller": sellerId },
+          { "items.seller": String(sellerId) }
+        ],
+      })
+      .sort({ date: -1, createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      orders,
+    });
+  } catch (error) {
+    console.error("getSellerOrders error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Upload or update payment proof for an order
+export const uploadPaymentProof = async (req, res) => {
+  try {
+    const { orderId, paymentProof } = req.body;
+    if (!orderId || !paymentProof) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID and paymentProof are required",
+      });
+    }
+
+    const order = await orderModel.findOne({
+      $or: [
+        { _id: orderId.match(/^[0-9a-fA-F]{24}$/) ? orderId : null },
+        { orderNumber: orderId },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    order.paymentProof = paymentProof;
+    await order.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Bukti pembayaran berhasil diunggah",
+      order,
+    });
+  } catch (error) {
+    console.error("uploadPaymentProof error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+

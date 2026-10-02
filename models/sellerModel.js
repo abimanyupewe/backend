@@ -60,6 +60,25 @@ const sellerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    bankName: {
+      type: String,
+      trim: true,
+      default: "BCA",
+    },
+    bankAccountNumber: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    bankAccountName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    qrisImage: {
+      type: String,
+      default: "",
+    },
     createdAt: {
       type: Date,
       default: Date.now,

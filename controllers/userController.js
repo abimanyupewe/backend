@@ -161,7 +161,15 @@ const registerUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { id, ...updateData } = req.body;
+    const id = req.body.id || req.body.userId || req.body._id;
+    const updateData = { ...req.body };
+    delete updateData.id;
+    delete updateData.userId;
+    delete updateData._id;
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
 
     // Ambil data user lama
     const oldUser = await userModel.findById(id);
@@ -267,7 +275,7 @@ const verOTP = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const userId = req.body.userId || req.headers.userid || req.query.id;
+    const userId = req.body?.userId || req.headers?.userid || req.query?.id || req.userId;
     if (!userId) {
       return res.status(400).json({ success: false, message: "User ID is required" });
     }

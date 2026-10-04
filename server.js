@@ -19,6 +19,7 @@ import cartRouter from "./routes/cartRoute.js";
 import agencyRouter from "./routes/agencyRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import voucherRouter from "./routes/voucherRoute.js";
+import contentRouter from "./routes/contentRoute.js";
 
 // app config
 const app = express();
@@ -115,6 +116,7 @@ app.use("/api/payment/midtrans", midtransRouter);
 app.use("/api/agency", agencyRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/voucher", voucherRouter);
+app.use("/api/content", contentRouter);
 
 app.get("/", (req, res) => {
   res.json({

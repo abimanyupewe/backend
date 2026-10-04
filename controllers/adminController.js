@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import validator from "validator";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 // import { sendOTPCode } from "../middleware/Email.js";
 import { sendOTPCode, sendResetPasswordEmail } from "../middleware/SendGrid.js";
 import adminModel from "../models/adminModel.js";
@@ -544,8 +545,14 @@ export const getDashboardMetrics = async (req, res) => {
     const recentOrders = orders.slice(0, 10);
     
     // Fetch Buyer Names
-    const userIds = recentOrders.map((o) => o.userId).filter(Boolean);
-    const users = await userModel.find({ _id: { $in: userIds } }).select("name fullName username");
+    const userIds = recentOrders
+      .map((o) => o.userId)
+      .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
+      
+    const users = userIds.length > 0 
+      ? await userModel.find({ _id: { $in: userIds } }).select("name fullName username") 
+      : [];
+      
     const userMap = users.reduce((acc, u) => {
       acc[u._id.toString()] = u.name || u.fullName || u.username;
       return acc;

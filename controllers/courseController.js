@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import courseModel from "../models/courseModel.js";
 import mentorModel from "../models/mentorModel.js";
-
+import categoryModel from "../models/categoryModel.js";
 const addCourse = async (req, res) => {
   try {
     const {
@@ -64,7 +64,7 @@ const addCourse = async (req, res) => {
 
 const getAllCourses = async (req, res) => {
   try {
-    const courses = await courseModel.find();
+    const courses = await courseModel.find().populate("category", "name");
     res.status(200).json({ success: true, courses });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

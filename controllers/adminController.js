@@ -7,6 +7,9 @@ import adminModel from "../models/adminModel.js";
 import userModel from "../models/userModels.js";
 import sellerModel from "../models/sellerModel.js";
 import mentorModel from "../models/mentorModel.js";
+import orderModel from "../models/orderModel.js";
+import productModel from "../models/productModel.js";
+import courseModel from "../models/courseModel.js";
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -518,4 +521,59 @@ export {
   getAllMentor,
   forgotPassword,
   resetPassword,
+};
+
+export const getDashboardMetrics = async (req, res) => {
+  try {
+    const [
+      orders,
+      pendingMentors,
+      totalProducts,
+      totalCourses,
+    ] = await Promise.all([
+      orderModel.find({}).sort({ createdAt: -1 }),
+      mentorModel.find({ isApprovedByAdmin: "pending" }),
+      productModel.countDocuments(),
+      courseModel.countDocuments(),
+    ]);
+
+    // Calculate GMV (Gross Merchandise Value)
+    const gmv = orders.reduce((sum, order) => sum + (order.amount || 0), 0);
+    const pendingOrdersCount = orders.filter((o) => o.status === "pending" || o.status === "processing").length;
+    
+    const recentOrders = orders.slice(0, 10);
+    
+    // Fetch Buyer Names
+    const userIds = recentOrders.map((o) => o.userId).filter(Boolean);
+    const users = await userModel.find({ _id: { $in: userIds } }).select("name fullName username");
+    const userMap = users.reduce((acc, u) => {
+      acc[u._id.toString()] = u.name || u.fullName || u.username;
+      return acc;
+    }, {});
+
+    const recentOrdersWithDetails = recentOrders.map((o) => {
+      const plainOrder = o.toObject ? o.toObject() : o;
+      return {
+        ...plainOrder,
+        buyerName: userMap[plainOrder.userId?.toString()] || "Unknown User",
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        gmv,
+        totalOrders: orders.length,
+        pendingOrdersCount,
+        pendingMentorsCount: pendingMentors.length,
+        totalProducts,
+        totalCourses,
+        recentOrders: recentOrdersWithDetails,
+        pendingMentors: pendingMentors.slice(0, 10),
+      },
+    });
+  } catch (error) {
+    console.error("getDashboardMetrics error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 };

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import "dotenv/config";
-import contentModel from "./models/contentModel.js";
+import contentModel from "../models/contentModel.js";
 
 const seedDatabase = async () => {
   try {
@@ -18,7 +18,7 @@ const seedDatabase = async () => {
         isActive: true,
         text: "Promo Spesial Hari Raya! Diskon hingga 50% untuk semua tanaman hias.",
         link: "/store",
-        backgroundColor: "#10b981",
+        backgroundColor: "#152A20",
         textColor: "#ffffff",
       },
       heroSliders: [

@@ -9,7 +9,9 @@
     "seed": "node seeders/seed.js",
     "seed:fresh": "node seeders/seed.js --fresh",
     "seed:agency": "node seeders/seedAgency.js",
-    "seed:agency:fresh": "node seeders/seedAgency.js --fresh"
+    "seed:agency:fresh": "node seeders/seedAgency.js --fresh",
+    "seed:content": "node seeders/seedContent.js",
+    "seed:dummy": "node seeders/seedDummyData.js"
   },
   "author": "",
   "license": "ISC",

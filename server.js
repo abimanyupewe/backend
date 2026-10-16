@@ -20,6 +20,7 @@ import agencyRouter from "./routes/agencyRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import voucherRouter from "./routes/voucherRoute.js";
 import contentRouter from "./routes/contentRoute.js";
+import settingRouter from "./routes/settingRoute.js";
 
 // app config
 const app = express();
@@ -117,6 +118,7 @@ app.use("/api/agency", agencyRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/voucher", voucherRouter);
 app.use("/api/content", contentRouter);
+app.use("/api/setting", settingRouter);
 
 app.get("/", (req, res) => {
   res.json({

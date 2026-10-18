@@ -584,3 +584,71 @@ export const getDashboardMetrics = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const createUserByAdmin = async (req, res) => {
+  try {
+    const { name, email, phone, password, isVerifed } = req.body;
+
+    if (!name || !email || !password) {
+      return res.json({
+        success: false,
+        message: "Nama, email, dan password wajib diisi",
+      });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.json({
+        success: false,
+        message: "Format email tidak valid",
+      });
+    }
+
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res.json({
+        success: false,
+        message: "Email sudah terdaftar di sistem",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.json({
+        success: false,
+        message: "Password minimal 6 karakter",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = new userModel({
+      name,
+      email,
+      phone: phone || "",
+      password: hashedPassword,
+      isVerifed: isVerifed !== undefined ? isVerifed : true,
+      role: "user",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await newUser.save();
+
+    res.json({
+      success: true,
+      message: "Pengguna berhasil ditambahkan",
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        isVerifed: newUser.isVerifed,
+        createdAt: newUser.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("createUserByAdmin error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

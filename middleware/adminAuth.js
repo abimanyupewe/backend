@@ -3,17 +3,21 @@ import adminModel from "../models/adminModel.js";
 
 const adminAuth = async (req, res, next) => {
   try {
-    // Ambil token dari header Authorization: Bearer <token>
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    // Ambil token dari header Authorization: Bearer <token> atau header token
+    const rawToken =
+      req.headers.token ||
+      (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : req.headers.authorization);
+
+    if (!rawToken) {
       return res
         .status(401)
         .json({ success: false, message: "Not Authorized" });
     }
-    const token = authHeader.split(" ")[1];
 
     // Verifikasi token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(rawToken, process.env.JWT_SECRET);
 
     // Cek admin di database (kecuali superadmin dari .env)
     if (decoded.role === "superadmin") {

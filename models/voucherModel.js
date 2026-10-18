@@ -53,13 +53,13 @@ const voucherSchema = new mongoose.Schema({
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    required: false,
     refPath: "role", // dinamis: ref ke model sesuai role
   },
   role: {
     type: String,
     enum: ["admin", "seller", "mentor"],
-    required: true,
+    default: "admin",
   },
   isActive: {
     type: Boolean,

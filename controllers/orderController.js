@@ -207,6 +207,26 @@ export const getSellerOrders = async (req, res) => {
   }
 };
 
+// Get all orders (for admin)
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await orderModel
+      .find({})
+      .sort({ date: -1, createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      orders,
+    });
+  } catch (error) {
+    console.error("getAllOrders error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // Upload or update payment proof for an order
 export const uploadPaymentProof = async (req, res) => {
   try {

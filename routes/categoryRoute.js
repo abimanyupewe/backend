@@ -7,12 +7,15 @@ import {
   deleteCategory,
 } from "../controllers/categoryController.js";
 
-const categoryRouter = express.Router();
+import authorize, { ownOrAdmin } from "../middleware/authorize.js";
 
-categoryRouter.post("/add", addCategory);
+const categoryRouter = express.Router();
+const admins = ["superadmin", "admin"];
+
+categoryRouter.post("/add", authorize(...admins), addCategory);
 categoryRouter.get("/get", getCategories);
 categoryRouter.get("/get/:id", getCategoryById);
-categoryRouter.put("/update/:id", updateCategory);
-categoryRouter.delete("/delete/:id", deleteCategory);
+categoryRouter.put("/update/:id", authorize(...admins), updateCategory);
+categoryRouter.delete("/delete/:id", authorize(...admins), deleteCategory);
 
 export default categoryRouter;

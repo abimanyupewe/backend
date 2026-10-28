@@ -136,6 +136,16 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
+    if (req.auth?.role === "seller") {
+      const sid = req.auth.id;
+      const owns =
+        String(order.sellerId) === sid ||
+        (order.items || []).some((it) => String(it.seller) === sid);
+      if (!owns) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+    }
+
     order.status = status;
     await order.save();
 

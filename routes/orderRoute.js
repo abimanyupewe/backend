@@ -8,16 +8,19 @@ import {
   getAllOrders,
 } from "../controllers/orderController.js";
 
-const orderRouter = express.Router();
+import authorize, { ownOrAdmin } from "../middleware/authorize.js";
 
-orderRouter.post("/place", placeOrder);
-orderRouter.get("/all", getAllOrders);
-orderRouter.post("/all", getAllOrders);
-orderRouter.post("/user-orders", getUserOrders);
-orderRouter.get("/user-orders", getUserOrders);
-orderRouter.post("/seller-orders", getSellerOrders);
-orderRouter.get("/seller-orders", getSellerOrders);
-orderRouter.post("/upload-proof", uploadPaymentProof);
-orderRouter.post("/update-status", updateOrderStatus);
+const orderRouter = express.Router();
+const admins = ["superadmin", "admin", "support"];
+
+orderRouter.post("/place", authorize("user"), placeOrder);
+orderRouter.get("/all", authorize(...admins), getAllOrders);
+orderRouter.post("/all", authorize(...admins), getAllOrders);
+orderRouter.post("/user-orders", authorize("user"), getUserOrders);
+orderRouter.get("/user-orders", authorize("user"), getUserOrders);
+orderRouter.post("/seller-orders", authorize("seller"), getSellerOrders);
+orderRouter.get("/seller-orders", authorize("seller"), getSellerOrders);
+orderRouter.post("/upload-proof", authorize("user"), uploadPaymentProof);
+orderRouter.post("/update-status", authorize(...admins, "seller"), updateOrderStatus);
 
 export default orderRouter;

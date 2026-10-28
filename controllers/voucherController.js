@@ -26,7 +26,9 @@ export const createVoucher = async (req, res) => {
       return res.status(400).json({ success: false, message: "Data voucher tidak lengkap" });
     }
 
-    let creatorId = createdBy;
+    // Seller/mentor hanya boleh membuat voucher atas namanya sendiri.
+    const own = req.auth && !["superadmin", "admin"].includes(req.auth.role);
+    let creatorId = own ? req.auth.id : createdBy;
     if (!creatorId) {
       const admin = await adminModel.findOne({});
       creatorId = admin ? admin._id : new mongoose.Types.ObjectId();
@@ -44,7 +46,7 @@ export const createVoucher = async (req, res) => {
       usageLimit: usageLimit ? Number(usageLimit) : null,
       product: product || null,
       course: course || null,
-      role: role || "admin",
+      role: own ? req.auth.role : role || "admin",
       createdBy: creatorId,
       isActive: true,
     });
@@ -88,6 +90,9 @@ export const getGlobalVouchers = async (req, res) => {
 export const getVouchersByCreator = async (req, res) => {
   try {
     const { creatorId } = req.params;
+    if (req.auth && !["superadmin", "admin"].includes(req.auth.role) && creatorId !== req.auth.id) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
     const vouchers = await voucherModel.find({ createdBy: creatorId }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: vouchers, vouchers });
   } catch (error) {
@@ -108,6 +113,10 @@ export const deleteGlobalVoucher = async (req, res) => {
 
 // Hapus Voucher (Route /delete/:id)
 export const deleteVoucher = async (req, res) => {
+  if (req.auth && !["superadmin", "admin"].includes(req.auth.role)) {
+    const owned = await voucherModel.exists({ _id: req.params.id, createdBy: req.auth.id });
+    if (!owned) return res.status(403).json({ success: false, message: "Access denied" });
+  }
   return deleteGlobalVoucher(req, res);
 };
 

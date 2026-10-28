@@ -1,6 +1,8 @@
 import express from "express";
 import connectDB from "./config/mongodb.js";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import "dotenv/config.js"; // Load environment variables
 import connectCloudinary from "./config/cloudinary.js";
 import userRouter from "./routes/userRoute.js";
@@ -8,18 +10,14 @@ import productRouter from "./routes/productRoute.js";
 import adminRouter from "./routes/adminRoute.js";
 import courseRouter from "./routes/courseRoute.js";
 import mentorRouter from "./routes/mentorRoute.js";
-import userModel from "./models/userModels.js";
-import sellerModel from "./models/sellerModel.js";
 import sellerRouter from "./routes/sellerRoute.js";
-import adminModel from "./models/adminModel.js";
-import mentorModel from "./models/mentorModel.js";
 import categoryRouter from "./routes/categoryRoute.js";
-import midtransRouter from "./routes/midtransRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import agencyRouter from "./routes/agencyRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import voucherRouter from "./routes/voucherRoute.js";
 import contentRouter from "./routes/contentRoute.js";
+import midtransRouter from "./routes/midtransRoute.js";
 import settingRouter from "./routes/settingRoute.js";
 
 // app config
@@ -37,6 +35,8 @@ const allowedOrigins = [
 ].filter(Boolean); // Remove undefined values
 
 // middleware
+app.set("trust proxy", 1); // di belakang proxy (Vercel) agar IP klien benar
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json({ limit: "10mb" }));
 app.use(
   cors({
@@ -79,30 +79,23 @@ app.use(
 connectDB();
 connectCloudinary();
 
-// Auto cleanup dengan error handling
-setInterval(async () => {
-  try {
-    await userModel.deleteMany({
-      isVerifed: false,
-      otpExpired: { $lt: new Date() },
-    });
-    await sellerModel.deleteMany({
-      isVerifed: false,
-      otpExpired: { $lt: new Date() },
-    });
-    await mentorModel.deleteMany({
-      isVerifed: false,
-      otpExpired: { $lt: new Date() },
-    });
-    await adminModel.deleteMany({
-      isVerifed: false,
-      status: "pending",
-      otpExpired: { $lt: new Date() },
-    });
-  } catch (error) {
-    console.error("Cleanup error:", error.message);
-  }
-}, 60 * 1000);
+// Batasi percobaan login/OTP/reset per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Terlalu banyak percobaan, coba lagi nanti." },
+});
+for (const role of ["user", "seller", "mentor"]) {
+  app.use(`/api/${role}/login`, authLimiter);
+  app.use(`/api/${role}/register`, authLimiter);
+  app.use(`/api/${role}/verify-otp`, authLimiter);
+}
+for (const path of ["login", "register", "forgot-password", "reset-password"]) {
+  app.use(`/api/admin/${path}`, authLimiter);
+}
+app.use("/api/user/change-password", authLimiter);
 
 // API routes
 app.use("/api/admin", adminRouter);

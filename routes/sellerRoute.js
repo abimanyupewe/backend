@@ -17,6 +17,7 @@ import {
 } from "../controllers/sellerController.js";
 import upload from "../middleware/multer.js";
 import sellerAuth from "../middleware/sellerAuth.js";
+import authorize, { ownOrAdmin } from "../middleware/authorize.js";
 
 const sellerRouter = express.Router();
 
@@ -32,7 +33,7 @@ sellerRouter.put(
   ]),
   updateSeller
 );
-sellerRouter.delete("/remove", removeSeller);
+sellerRouter.delete("/remove", authorize("superadmin", "admin", "seller"), ownOrAdmin, removeSeller);
 sellerRouter.get("/single", singleSeller);
 sellerRouter.post("/verify-otp", verifySellerOTP);
 sellerRouter.get("/all-products-seller", sellerAuth, getAllProducts);

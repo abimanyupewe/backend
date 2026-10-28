@@ -9,7 +9,10 @@ import {
   AgencyOrder,
 } from "../models/agencyModel.js";
 
+import authorize, { ownOrAdmin } from "../middleware/authorize.js";
+
 const agencyRouter = express.Router();
+const admin = authorize("superadmin", "admin");
 
 const modelMap = {
   products: AgencyProduct,
@@ -22,7 +25,7 @@ const modelMap = {
 };
 
 // Generic GET all items by tab
-agencyRouter.get("/:tab", async (req, res) => {
+agencyRouter.get("/:tab", (req, res, next) => (req.params.tab === "orders" ? admin(req, res, next) : next()), async (req, res) => {
   try {
     const { tab } = req.params;
     const Model = modelMap[tab];
@@ -37,7 +40,7 @@ agencyRouter.get("/:tab", async (req, res) => {
 });
 
 // Generic POST create item
-agencyRouter.post("/:tab", async (req, res) => {
+agencyRouter.post("/:tab", (req, res, next) => (req.params.tab === "orders" ? next() : admin(req, res, next)), async (req, res) => {
   try {
     const { tab } = req.params;
     const Model = modelMap[tab];
@@ -52,7 +55,7 @@ agencyRouter.post("/:tab", async (req, res) => {
 });
 
 // Generic PUT update item
-agencyRouter.put("/:tab/:id", async (req, res) => {
+agencyRouter.put("/:tab/:id", admin, async (req, res) => {
   try {
     const { tab, id } = req.params;
     const Model = modelMap[tab];
@@ -67,7 +70,7 @@ agencyRouter.put("/:tab/:id", async (req, res) => {
 });
 
 // Generic DELETE remove item
-agencyRouter.delete("/:tab/:id", async (req, res) => {
+agencyRouter.delete("/:tab/:id", admin, async (req, res) => {
   try {
     const { tab, id } = req.params;
     const Model = modelMap[tab];

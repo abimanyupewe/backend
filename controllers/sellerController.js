@@ -171,7 +171,7 @@ const registerSeller = async (req, res) => {
 // List all sellers
 const listSellers = async (req, res) => {
   try {
-    const sellers = await sellerModel.find({});
+    const sellers = await sellerModel.find({}).select("-password -otp -otpExpired");
     res.json({ success: true, sellers });
   } catch (error) {
     console.error(error);
@@ -327,7 +327,7 @@ const singleSeller = async (req, res) => {
     if (!id) {
       return res.status(400).json({ success: false, message: "Seller ID is required" });
     }
-    const seller = await sellerModel.findById(id);
+    const seller = await sellerModel.findById(id).select("-password -otp -otpExpired");
     if (!seller) {
       return res.status(404).json({ success: false, message: "Seller not found" });
     }

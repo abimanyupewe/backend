@@ -1,4 +1,5 @@
 import express from "express";
+import authorize from "../middleware/authorize.js";
 import { createMidtransTransaction } from "../controllers/payment/midtransController.js";
 
 const midtransRouter = express.Router();
@@ -13,6 +14,6 @@ midtransRouter.get("/config", (req, res) => {
   });
 });
 
-midtransRouter.post("/", createMidtransTransaction);
+midtransRouter.post("/", authorize("user"), createMidtransTransaction);
 
 export default midtransRouter;

@@ -58,10 +58,10 @@ const seedDatabase = async () => {
       ]
     });
 
-    console.log("✅ Seed content completed successfully!");
+    console.log("Seed content completed successfully!");
     process.exit(0);
   } catch (error) {
-    console.error("❌ Seed failed:", error);
+    console.error("Seed failed:", error);
     process.exit(1);
   }
 };

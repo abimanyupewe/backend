@@ -63,6 +63,10 @@ const userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+    purchasedCourses: {
+      type: Array,
+      default: [],
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -75,6 +79,12 @@ const userSchema = new mongoose.Schema(
   {
     minimize: false,
   }
+);
+
+// Hapus otomatis akun yang tidak diverifikasi setelah OTP kedaluwarsa (menggantikan setInterval).
+userSchema.index(
+  { otpExpired: 1 },
+  { expireAfterSeconds: 0, partialFilterExpression: { isVerifed: false } }
 );
 
 const userModel = mongoose.models.user || mongoose.model("user", userSchema);

@@ -4,12 +4,14 @@ import {
   addProduct,
   updateProduct,
   removeProduct,
+  setProductStatus,
   singleProduct,
   getProductsSeller,
 } from "../controllers/productController.js";
 import upload from "../middleware/multer.js";
 import adminAuth from "../middleware/adminAuth.js";
 import sellerAuth from "../middleware/sellerAuth.js";
+import authorize from "../middleware/authorize.js";
 
 const productRouter = express.Router();
 
@@ -36,7 +38,8 @@ productRouter.put(
   ]),
   updateProduct
 );
-productRouter.delete("/remove", removeProduct);
+productRouter.delete("/remove", authorize("superadmin", "admin", "seller"), removeProduct);
+productRouter.put("/status", authorize("superadmin", "admin"), setProductStatus);
 productRouter.get("/list", listProducts);
 productRouter.get("/single", singleProduct);
 productRouter.get("/seller/:seller", getProductsSeller);

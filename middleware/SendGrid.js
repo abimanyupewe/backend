@@ -24,7 +24,7 @@ export const sendResetPasswordEmail = async (email, otp) => {
     await sgMail.send({
       to: email,
       from: 'By Florera <floreratip3@gmail.com>',
-      subject: "Reset Password - Florera Admin",
+      subject: "Reset Password - Florera",
       text: `Gunakan kode OTP berikut untuk mereset password Anda: ${otp}`,
       html: resetPasswordTemplate.replace("{otp}", otp),
     });

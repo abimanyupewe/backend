@@ -1,6 +1,8 @@
 import express from "express";
 import connectDB from "./config/mongodb.js";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import "dotenv/config.js"; // Load environment variables
 import connectCloudinary from "./config/cloudinary.js";
 import userRouter from "./routes/userRoute.js";
@@ -8,18 +10,14 @@ import productRouter from "./routes/productRoute.js";
 import adminRouter from "./routes/adminRoute.js";
 import courseRouter from "./routes/courseRoute.js";
 import mentorRouter from "./routes/mentorRoute.js";
-import userModel from "./models/userModels.js";
-import sellerModel from "./models/sellerModel.js";
 import sellerRouter from "./routes/sellerRoute.js";
-import adminModel from "./models/adminModel.js";
-import mentorModel from "./models/mentorModel.js";
 import categoryRouter from "./routes/categoryRoute.js";
-import midtransRouter from "./routes/midtransRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import agencyRouter from "./routes/agencyRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import voucherRouter from "./routes/voucherRoute.js";
 import contentRouter from "./routes/contentRoute.js";
+import midtransRouter from "./routes/midtransRoute.js";
 import settingRouter from "./routes/settingRoute.js";
 
 // app config
@@ -30,6 +28,8 @@ const port = process.env.PORT || 4000;
 const allowedOrigins = [
   "http://localhost:3000", // development
   "http://localhost:3001", // development backup
+  "http://localhost:3002",
+  "http://localhost:3003",
   process.env.FRONTEND_FLORERA?.replace(/\/$/, ""), // Main app
   process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""), // Admin Seller
   process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""), // Admin Mentor
@@ -37,6 +37,8 @@ const allowedOrigins = [
 ].filter(Boolean); // Remove undefined values
 
 // middleware
+app.set("trust proxy", 1); // di belakang proxy (Vercel) agar IP klien benar
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json({ limit: "10mb" }));
 app.use(
   cors({
@@ -55,8 +57,8 @@ app.use(
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log(`❌ CORS blocked: ${origin}`);
-        console.log(`✅ Allowed origins:`, allowedOrigins);
+        console.log(`CORS blocked: ${origin}`);
+        console.log(`Allowed origins:`, allowedOrigins);
         // Jangan throw error, return false saja
         callback(null, false);
       }
@@ -79,30 +81,25 @@ app.use(
 connectDB();
 connectCloudinary();
 
-// Auto cleanup dengan error handling
-setInterval(async () => {
-  try {
-    await userModel.deleteMany({
-      isVerifed: false,
-      otpExpired: { $lt: new Date() },
-    });
-    await sellerModel.deleteMany({
-      isVerifed: false,
-      otpExpired: { $lt: new Date() },
-    });
-    await mentorModel.deleteMany({
-      isVerifed: false,
-      otpExpired: { $lt: new Date() },
-    });
-    await adminModel.deleteMany({
-      isVerifed: false,
-      status: "pending",
-      otpExpired: { $lt: new Date() },
-    });
-  } catch (error) {
-    console.error("Cleanup error:", error.message);
-  }
-}, 60 * 1000);
+// Batasi percobaan login/OTP/reset per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Terlalu banyak percobaan, coba lagi nanti." },
+});
+for (const role of ["user", "seller", "mentor"]) {
+  app.use(`/api/${role}/login`, authLimiter);
+  app.use(`/api/${role}/register`, authLimiter);
+  app.use(`/api/${role}/verify-otp`, authLimiter);
+  app.use(`/api/${role}/forgot-password`, authLimiter);
+  app.use(`/api/${role}/reset-password`, authLimiter);
+}
+for (const path of ["login", "register", "forgot-password", "reset-password"]) {
+  app.use(`/api/admin/${path}`, authLimiter);
+}
+app.use("/api/user/change-password", authLimiter);
 
 // API routes
 app.use("/api/admin", adminRouter);
@@ -147,8 +144,8 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-  console.log(`🌐 Connected frontends:`);
+  console.log(`Server running on port ${port}`);
+  console.log(`Connected frontends:`);
   console.log(`   - Main App: ${process.env.FRONTEND_FLORERA}`);
   console.log(`   - Admin Seller: ${process.env.FRONTEND_ADMIN_SELLER}`);
   console.log(`   - Admin Mentor: ${process.env.FRONTEND_ADMIN_MENTOR}`);

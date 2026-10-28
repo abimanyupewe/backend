@@ -44,6 +44,12 @@ const adminSchema = new mongoose.Schema(
   }
 );
 
+// Hapus otomatis akun yang tidak diverifikasi setelah OTP kedaluwarsa (menggantikan setInterval).
+adminSchema.index(
+  { otpExpired: 1 },
+  { expireAfterSeconds: 0, partialFilterExpression: { isVerifed: false, status: "pending" } }
+);
+
 const adminModel =
   mongoose.models.admin || mongoose.model("admin", adminSchema);
 

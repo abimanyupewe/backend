@@ -28,6 +28,8 @@ const port = process.env.PORT || 4000;
 const allowedOrigins = [
   "http://localhost:3000", // development
   "http://localhost:3001", // development backup
+  "http://localhost:3002",
+  "http://localhost:3003",
   process.env.FRONTEND_FLORERA?.replace(/\/$/, ""), // Main app
   process.env.FRONTEND_ADMIN_SELLER?.replace(/\/$/, ""), // Admin Seller
   process.env.FRONTEND_ADMIN_MENTOR?.replace(/\/$/, ""), // Admin Mentor
@@ -91,6 +93,8 @@ for (const role of ["user", "seller", "mentor"]) {
   app.use(`/api/${role}/login`, authLimiter);
   app.use(`/api/${role}/register`, authLimiter);
   app.use(`/api/${role}/verify-otp`, authLimiter);
+  app.use(`/api/${role}/forgot-password`, authLimiter);
+  app.use(`/api/${role}/reset-password`, authLimiter);
 }
 for (const path of ["login", "register", "forgot-password", "reset-password"]) {
   app.use(`/api/admin/${path}`, authLimiter);
@@ -140,8 +144,8 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-  console.log(`🌐 Connected frontends:`);
+  console.log(`Server running on port ${port}`);
+  console.log(`Connected frontends:`);
   console.log(`   - Main App: ${process.env.FRONTEND_FLORERA}`);
   console.log(`   - Admin Seller: ${process.env.FRONTEND_ADMIN_SELLER}`);
   console.log(`   - Admin Mentor: ${process.env.FRONTEND_ADMIN_MENTOR}`);

@@ -1,8 +1,7 @@
 import express from "express";
-import { deleteUser, loginUser, registerUser, updateUser, verOTP, getUserProfile, changePassword } from "../controllers/userController.js";
+import { deleteUser, loginUser, registerUser, updateUser, verOTP, forgotPassword, resetPassword, getUserProfile, changePassword } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 import authUser from "../middleware/auth.js";
-
 import authorize, { ownOrAdmin } from "../middleware/authorize.js";
 
 const userRouter = express.Router();
@@ -15,5 +14,8 @@ userRouter.put("/update", authorize(...anyone), ownOrAdmin, upload.fields([{ nam
 userRouter.post("/change-password", changePassword);
 userRouter.delete("/delete", authorize(...anyone), ownOrAdmin, deleteUser);
 userRouter.post("/verify-otp", verOTP);
+userRouter.post("/forgot-password", forgotPassword);
+userRouter.post("/reset-password", resetPassword);
+userRouter.get("/profile", authUser, getUserProfile);
 
 export default userRouter;

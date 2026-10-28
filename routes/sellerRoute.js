@@ -14,6 +14,8 @@ import {
   disableProduct,
   enableProduct,
   getSellerProfile,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/sellerController.js";
 import upload from "../middleware/multer.js";
 import sellerAuth from "../middleware/sellerAuth.js";
@@ -52,5 +54,7 @@ sellerRouter.put(
 );
 sellerRouter.put("/disable-product", sellerAuth, disableProduct);
 sellerRouter.put("/enable-product", sellerAuth, enableProduct);
+sellerRouter.post("/forgot-password", forgotPassword);
+sellerRouter.post("/reset-password", resetPassword);
 
 export default sellerRouter;

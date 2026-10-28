@@ -168,6 +168,11 @@ const removeProduct = async (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
 
+    // Seller hanya boleh menghapus produk miliknya; admin bebas.
+    if (req.auth?.role === "seller" && String(product.seller) !== req.auth.id) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
     // Simpan sellerId sebelum hapus
     const sellerId = product.seller;
 
@@ -183,6 +188,27 @@ const removeProduct = async (req, res) => {
     console.log(error);
 
     res.json({ success: false, message: error.message });
+  }
+};
+
+// Moderasi admin: aktif/nonaktifkan produk milik toko mana pun.
+const setProductStatus = async (req, res) => {
+  try {
+    const { productId, status } = req.body;
+    if (!["active", "disabled"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+    const product = await productModel.findByIdAndUpdate(
+      productId,
+      { status },
+      { new: true }
+    );
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+    res.json({ success: true, product });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -266,6 +292,7 @@ export {
   listProducts,
   updateProduct,
   removeProduct,
+  setProductStatus,
   singleProduct,
   getProductsSeller,
   rateProduct,

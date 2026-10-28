@@ -57,8 +57,8 @@ app.use(
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log(`❌ CORS blocked: ${origin}`);
-        console.log(`✅ Allowed origins:`, allowedOrigins);
+        console.log(`CORS blocked: ${origin}`);
+        console.log(`Allowed origins:`, allowedOrigins);
         // Jangan throw error, return false saja
         callback(null, false);
       }

@@ -159,10 +159,10 @@ const seedDummyData = async () => {
     console.log("Seeding Documentations...");
     await documentationModel.insertMany(documentations);
 
-    console.log("✅ Seeding dummy data completed successfully!");
+    console.log("Seeding dummy data completed successfully!");
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error during seeding:", error);
+    console.error("Error during seeding:", error);
     process.exit(1);
   }
 };

@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 //     const info = await transporter.sendMail({
 //       from: '"By Florera" <floreratip3@gmail.com>',
 //       to: "abimanyupw369@gmail.com",
-//       subject: "Hello ✔",
+//       subject: "Hello",
 //       text: "Hello world?", // plain‑text body
 //       html: "<b>Hello world?</b>", // HTML body
 //     });

@@ -7,6 +7,7 @@ import {
   updateMentor,
   deleteMentor,
   verifyMentorOtp,
+  approveMentor,
   forgotPassword,
   resetPassword,
 } from "../controllers/mentorController.js";
@@ -23,6 +24,7 @@ router.get("/get/:id", getMentor);
 router.put("/update", authorize("superadmin", "admin", "mentor"), ownOrAdmin, upload.fields([{ name: "profileImage", maxCount: 1 }, { name: "certificates"}]), updateMentor);
 router.delete("/delete/:id", authorize("superadmin", "admin"), deleteMentor);
 router.post("/verify-otp", verifyMentorOtp);
+router.post("/approve", authorize("superadmin", "admin"), approveMentor);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
